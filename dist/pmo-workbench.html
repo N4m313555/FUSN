@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>物管日常工作台</title>
+<meta name="description" content="物業主任日常工作台：個案跟進、法規導航、信件草擬、對話準備、形勢判斷、承辦商同巡查紀錄。資料只儲存喺你自己嘅瀏覽器。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231f5f5b'/%3E%3Cpath d='M16 46V26l16-12 16 12v20H38V34H26v12z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;500;700&display=swap">
+<style>
+:root {
+  --bg: #f4f5f2;
+  --surface: #ffffff;
+  --surface-2: #eceeea;
+  --text: #1c211f;
+  --muted: #5f6763;
+  --border: #d8dcd7;
+  --accent: #1f5f5b;
+  --accent-soft: #dcecea;
+  --danger: #b42318;
+  --danger-soft: #fde7e4;
+  --warn: #9a6700;
+  --warn-soft: #fff3cf;
+  --ok: #1f7a3d;
+  --ok-soft: #dff3e5;
+  --info-soft: #e3ecf8;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  --radius: 10px;
+  --font: "Noto Sans HK", -apple-system, "PingFang HK", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", "Noto Sans HK", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131615; --surface: #1c2120; --surface-2: #252b29; --text: #e8ebe8; --muted: #9aa39e; --border: #333b38;
+    --accent: #6fbcb5; --accent-soft: #1e3532; --danger: #f08a80; --danger-soft: #3a1f1c; --warn: #e6b74a; --warn-soft: #3a3116;
+    --ok: #6fcf8f; --ok-soft: #1a3324; --info-soft: #1f2a3a; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131615; --surface: #1c2120; --surface-2: #252b29; --text: #e8ebe8; --muted: #9aa39e; --border: #333b38;
+  --accent: #6fbcb5; --accent-soft: #1e3532; --danger: #f08a80; --danger-soft: #3a1f1c; --warn: #e6b74a; --warn-soft: #3a3116;
+  --ok: #6fcf8f; --ok-soft: #1a3324; --info-soft: #1f2a3a; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.55; }
+a { color: var(--accent); }
+h1, h2, h3, h4 { margin: 0 0 .5em; line-height: 1.3; }
+h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; } h3 { font-size: 1.05rem; } h4 { font-size: .95rem; color: var(--muted); font-weight: 600; }
+p { margin: 0 0 .75em; }
+.muted { color: var(--muted); } .small { font-size: .85rem; } .tiny { font-size: .78rem; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.hidden { display: none !important; }
+
+.app { display: grid; grid-template-columns: 240px 1fr; grid-template-rows: auto 1fr; min-height: 100vh; }
+.sidebar { grid-row: 1 / span 2; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; }
+.brand { display: flex; gap: 10px; align-items: center; padding: 18px 16px 12px; }
+.brand-mark { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.brand-name { font-weight: 700; }
+.brand-sub { font-size: .8rem; color: var(--muted); }
+.nav { display: flex; flex-direction: column; padding: 6px 10px; gap: 2px; flex: 1; }
+.nav a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-weight: 500; }
+.nav a:hover { background: var(--surface-2); }
+.nav a.active { background: var(--accent-soft); color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.nav a:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+.nav-sep { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 12px 10px 4px; }
+.sidebar-foot { padding: 12px 16px; border-top: 1px solid var(--border); }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+.topbar-title { font-weight: 700; flex: 1; }
+.icon-btn { display: none; background: none; border: 1px solid var(--border); border-radius: 8px; font-size: 18px; padding: 4px 10px; color: var(--text); cursor: pointer; }
+.main { padding: 20px; max-width: 1200px; width: 100%; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: fixed; left: 0; top: 0; width: 260px; transform: translateX(-100%); transition: transform .2s; z-index: 20; box-shadow: var(--shadow); }
+  .sidebar.open { transform: none; }
+  .icon-btn { display: inline-block; }
+  .main { padding: 16px; }
+}
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; font-weight: 500; text-decoration: none; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger); border-color: var(--danger); }
+.btn.small { padding: 5px 10px; font-size: .85rem; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.card.flat { box-shadow: none; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.card-head h2, .card-head h3 { margin: 0; }
+.grid { display: grid; gap: 16px; }
+.grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+.stat { padding: 14px 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); cursor: pointer; }
+.stat:hover { border-color: var(--accent); }
+.stat .n { font-size: 1.9rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .l { color: var(--muted); font-size: .85rem; }
+.stat.danger .n { color: var(--danger); } .stat.warn .n { color: var(--warn); } .stat.ok .n { color: var(--ok); } .stat.accent .n { color: var(--accent); }
+
+.banner { padding: 12px 14px; border-radius: 8px; margin-bottom: 14px; border: 1px solid transparent; }
+.banner.danger { background: var(--danger-soft); border-color: var(--danger); color: var(--text); }
+.banner.warn { background: var(--warn-soft); border-color: var(--warn); }
+.banner.info { background: var(--info-soft); border-color: var(--border); }
+.banner.ok { background: var(--ok-soft); border-color: var(--ok); }
+.banner strong { display: block; margin-bottom: 2px; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.tag.danger { background: var(--danger-soft); color: var(--danger); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.ok { background: var(--ok-soft); color: var(--ok); }
+.tag.accent { background: var(--accent-soft); color: var(--accent); }
+.tag.info { background: var(--info-soft); color: var(--text); }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: .8rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--surface-2); }
+.table-wrap { overflow-x: auto; }
+
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item { display: flex; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; align-items: flex-start; }
+.item:hover { border-color: var(--accent); }
+.item .body { flex: 1; min-width: 0; }
+.item .title { font-weight: 600; }
+.item .meta { font-size: .82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 2px; }
+.item.overdue { border-left: 4px solid var(--danger); }
+.item.due { border-left: 4px solid var(--warn); }
+.item.safety { border-left: 4px solid var(--danger); background: var(--danger-soft); }
+
+form .row, .row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 12px; }
+.row.full { grid-template-columns: 1fr; }
+label { display: block; font-size: .82rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+textarea { min-height: 80px; resize: vertical; }
+textarea.letter { min-height: 420px; font-family: var(--font); line-height: 1.7; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 500; color: var(--text); font-size: .95rem; }
+.check input { width: auto; }
+.help { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { position: relative; padding: 8px 0 8px 22px; border-left: 2px solid var(--border); margin-left: 6px; }
+.timeline li::before { content: ""; position: absolute; left: -7px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); }
+.timeline .when { font-size: .8rem; color: var(--muted); }
+.timeline .what { white-space: pre-wrap; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
+.tabs button { background: none; border: none; padding: 8px 12px; cursor: pointer; font: inherit; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; }
+.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.ladder { display: grid; gap: 8px; }
+.ladder .rung { display: flex; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; align-items: flex-start; }
+.ladder .rung.current { border-color: var(--accent); background: var(--accent-soft); }
+.ladder .rung .lvl { font-weight: 700; min-width: 2em; }
+
+.step { padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 8px 8px 0; margin-bottom: 8px; }
+.step .k { font-weight: 600; font-size: .85rem; color: var(--muted); }
+.step .v { white-space: pre-wrap; }
+.quote { border-left: 3px solid var(--border); padding: 4px 10px; color: var(--text); margin: 6px 0; white-space: pre-wrap; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.modal { background: var(--surface); border-radius: 12px; width: min(720px, 100%); max-height: 92vh; overflow: auto; padding: 20px; box-shadow: var(--shadow); }
+.modal h2 { margin-bottom: 12px; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 8px; z-index: 60; box-shadow: var(--shadow); }
+
+.warnlist { margin: 0; padding-left: 1.2em; }
+.warnlist li { margin-bottom: 4px; }
+mark { background: var(--warn-soft); color: var(--text); padding: 0 2px; border-radius: 3px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: .92rem; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.filters select, .filters input { width: auto; min-width: 140px; }
+.seven-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { border: none; background: var(--surface); padding: 5px 10px; cursor: pointer; font: inherit; color: var(--muted); }
+.seg button.on-me { background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.seg button.on-them { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
+.seg button.on-even { background: var(--surface-2); color: var(--text); font-weight: 600; }
+.empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+
+@media print {
+  .sidebar, .topbar, .no-print, .toast, .modal-backdrop { display: none !important; }
+  .app { display: block; }
+  .main { padding: 0; max-width: none; }
+  .card { box-shadow: none; border: none; }
+  body { background: #fff; color: #000; font-size: 12pt; }
+  textarea.letter { border: none; min-height: 0; height: auto; overflow: visible; }
+  .print-letter { white-space: pre-wrap; font-size: 12pt; line-height: 1.8; }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" width="22" height="22"><path d="M16 46V26l16-12 16 12v20H38V34H26v12z" fill="currentColor"/></svg></div>
+      <div>
+        <div class="brand-name">物管日常工作台</div>
+        <div class="brand-sub" id="brandEstate">未設定屋邨</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#/today" data-route="today">今日</a>
+      <a href="#/cases" data-route="cases">個案</a>
+      <a href="#/inspections" data-route="inspections">巡查</a>
+      <a href="#/contractors" data-route="contractors">承辦商</a>
+      <div class="nav-sep">工具</div>
+      <a href="#/router" data-route="router">法規導航</a>
+      <a href="#/letters" data-route="letters">信件草擬</a>
+      <a href="#/prep" data-route="prep">對話準備</a>
+      <a href="#/review" data-route="review">形勢判斷</a>
+      <div class="nav-sep">系統</div>
+      <a href="#/settings" data-route="settings">設定／備份</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="muted small">資料只儲存喺呢部機嘅瀏覽器。記得定期匯出備份。</div>
+    </div>
+  </aside>
+  <div class="topbar">
+    <button class="icon-btn" id="menuBtn" aria-label="選單">☰</button>
+    <div class="topbar-title" id="topbarTitle">今日</div>
+    <button class="btn primary small" id="quickAddBtn">新個案</button>
+  </div>
+  <main class="main" id="main"></main>
+</div>
+<div class="modal-backdrop hidden" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" id="modal"></div>
+</div>
+<div class="toast hidden" id="toast"></div>
+<script>
+/* 參考資料模組 —— 條例、部門、程序、對白、信件結構。
+ * 注意：時限、費用、門檻數字會改。任何具體數字用之前要向原始來源核實（見 SOURCES）。
+ */
+window.REF = (function () {
+  const PREMISES = {
+    ha_rental: { label: '房委會租住單位', regime: '房屋條例（第283章）、租約條款、房屋署內部程序', seepage: '房屋署／屋邨辦事處內部處理，唔係打 1823 轉介聯辦處' },
+    tps:       { label: '租者置其屋計劃單位', regime: '有公契，可能有法團；建築物管理條例（第344章）可能適用', seepage: '視乎業權同公契，要查清楚先決定行邊條路' },
+    private:   { label: '私人樓宇（有公契）', regime: '建築物管理條例（第344章）、公契', seepage: '聯合辦事處（食環署＋屋宇署）' },
+    commercial:{ label: '邨內商業／機構租戶', regime: '租約條款為主', seepage: '按租約條款處理' },
+  };
+
+  const CASE_TYPES = {
+    seepage:    { label: '滲水', icon: '💧' },
+    noise:      { label: '噪音', icon: '🔊' },
+    ubw:        { label: '僭建／違規改動', icon: '🧱' },
+    escape:     { label: '走火通道／消防設備阻塞', icon: '🚨', safety: true },
+    structure:  { label: '結構危險／石屎剝落', icon: '⚠️', safety: true },
+    obstruction:{ label: '走廊／大堂雜物', icon: '📦' },
+    renovation: { label: '裝修管制', icon: '🔨' },
+    contractor: { label: '承辦商／採購', icon: '🏗️' },
+    fee:        { label: '收費／按金爭拗', icon: '💵' },
+    data:       { label: 'CCTV／住戶資料', icon: '📷' },
+    staff:      { label: '同事／前線員工', icon: '👥' },
+    other:      { label: '其他', icon: '📁' },
+  };
+
+  // 個案 → 歸邊度。premises 為 null 即所有處所類型通用。
+  const ROUTES = [
+    { type: 'seepage', premises: 'private', ordinance: '公眾衞生及市政條例（第132章）', dept: '滲水投訴調查聯合辦事處（食環署＋屋宇署）', role: '先協調；協調唔到先轉介。食環署嘅「物業管理公司協助處理住宅樓宇滲水計劃」下，約七成個案係由物管公司協調解決——協調成功係常態，轉介係例外。',
+      procedure: [
+        '2026 年 7 月 16 日起先導計劃新程序（只適用於私人樓宇；之前開立嘅個案按舊程序跟）',
+        '聯辦處一般喺收到舉報後 6 個工作天內聯絡舉報人',
+        '第一階段：紅外線熱成像＋電子濕度儀，無需進入上層單位就可初步確定源頭；濕度低於 35% 唔會調查／暫停跟進',
+        '有理由相信係上層引致 → 向上層業主發「建議維修通知」，28 個曆日內自行檢查同完成維修；簡單個案約 14 個工作天內可發出',
+        '期限屆滿滲水持續 → 第二及第三階段同步進行 → 確認構成衞生妨擾 → 按第132章發「妨擾事故通知」；唔履行者政府追收檢驗費用',
+        '業主／住戶拒絕合作 → 聯辦處可向法庭申請手令進入單位',
+        '天雨經天台、外牆、窗戶引致嘅滲漏、供水喉管破損 → 一般唔構成第132章妨擾 → 轉介屋宇署／水務署',
+      ],
+      verify: ['個案開立日期（決定新舊程序）', '28 日、6 個工作天、14 個工作天、35% 門檻——向 waterseepage.gov.hk 核實', '分區聯辦處聯絡方法'],
+      related: [
+        { ordinance: '建築物條例（第123章）', dept: '屋宇署', when: '涉及結構安全——發現即轉介' },
+        { ordinance: '水務設施條例（第102章）', dept: '水務署', when: '浪費食水／供水喉管' },
+      ] },
+    { type: 'seepage', premises: 'ha_rental', ordinance: '房屋條例（第283章）、租約條款', dept: '房屋署／屋邨辦事處（內部程序）', role: '內部處理。常見錯誤係將私人樓宇嘅聯辦處程序套落租住單位度。',
+      procedure: ['按房署內部通函、租約條款同屋邨管理指引處理', '涉及結構 → 屋宇署／房署工程部門', '租戶拒絕配合 → 租約條款下嘅正式通知程序（問上級）'],
+      verify: ['房署內部程序同時限（呢個系統唔覆蓋內部程序，要查內部系統或問上級）'], related: [] },
+    { type: 'seepage', premises: 'tps', ordinance: '視乎業權：建築物管理條例（第344章）／公契／租約', dept: '要查——已售單位可能行聯辦處；未售單位仍屬房委會', role: '先確認涉事單位業權，再決定行邊套。',
+      procedure: ['確認上下兩個單位各自係已售定未售', '已售私人單位之間 → 參考私人樓宇程序', '涉及未售單位 → 房署程序'], verify: ['單位業權狀況', '公契條款', '法團有冇成立'], related: [] },
+    { type: 'seepage', premises: 'commercial', ordinance: '租約條款為主', dept: '按租約', role: '按租約條款要求租戶維修；涉及公眾衞生仍可轉介。',
+      procedure: ['查租約維修責任條款', '書面通知租戶限期維修'], verify: ['租約條款', '維修責任分界'], related: [] },
+    { type: 'noise', premises: null, ordinance: '噪音管制條例（第400章）', dept: '環保署／警方（住用處所噪音由警方處理）', role: '記錄、協調、轉介。你冇量度同執法權。',
+      procedure: ['記錄：日期、時間、持續幾耐、性質、投訴人單位', '先協調兩邊（分開講，唔好夾埋）', '住用處所鄰里噪音 → 警方；裝修／工商業噪音 → 環保署', '租住單位另按租約條款'], verify: ['環保署對住宅裝修噪音時段嘅規定', '租約條款'], related: [] },
+    { type: 'ubw', premises: null, ordinance: '建築物條例（第123章）', dept: '屋宇署', role: '記錄、轉介；租住單位另按租約條款。你唔可以判斷係咪僭建，只可以轉介。',
+      procedure: ['影相記錄（唔好入屋硬影）', '轉介屋宇署', '租住單位：同時按租約通知租戶'], verify: ['屋宇署轉介渠道同回覆時限'], related: [] },
+    { type: 'escape', premises: null, ordinance: '消防安全（建築物）條例（第572章）、消防條例（第95章）', dept: '消防處', role: '即時處理，唔入酌情計算。安全同法定事項冇酌情。',
+      procedure: ['即時清除阻塞或安排清除', '記錄時間、位置、物品、相片', '拒絕配合 → 即時上報並通知消防處', '涉及弱勢住戶 → 同時轉介支援，但清除唔可以等'], verify: ['消防處舉報渠道'], related: [] },
+    { type: 'structure', premises: null, ordinance: '建築物條例（第123章）', dept: '屋宇署', role: '發現即轉介、即時圍封。冇酌情。',
+      procedure: ['即時圍封危險範圍', '上報上級', '轉介屋宇署／工程部門'], verify: ['內部緊急通報程序'], related: [] },
+    { type: 'obstruction', premises: null, ordinance: '公契／租約條款；如阻塞走火通道則轉為消防安全個案', dept: '本處；消防處（如涉走火通道）', role: '先分類：安全風險定觀感問題。安全 → 即時；觀感 → 有得傾。',
+      procedure: ['分類：阻塞走火通道／消防設備 → 轉「走火通道阻塞」個案', '觀感問題 → 上門傾，一齊揀留咩、搬咩', '長者／行動不便 → 講得出邊個幫手搬先好下通牒', '屋企堆到出走廊 → 紀錄建議轉介社區服務隊／社工'], verify: ['公契或租約條款'], related: [] },
+    { type: 'renovation', premises: null, ordinance: '公契／租約裝修條款；建築物條例（第123章）；噪音管制條例（第400章）', dept: '本處；屋宇署；環保署', role: '審批裝修申請、監察、記錄。',
+      procedure: ['查裝修申請同按金紀錄', '涉及結構改動 → 屋宇署', '時段外噪音 → 記錄、通知、環保署'], verify: ['裝修守則時段', '按金條款'], related: [] },
+    { type: 'contractor', premises: null, ordinance: '合約條款；競爭條例（第619章）；監管局操守守則《代客戶進行採購服務及防止圍標》', dept: '本處合約管理；競委會／廉署（圍標）；監管局（操守）', role: '程序要企得住。改善用口頭先；紀錄用書面。',
+      procedure: ['口頭 → 書面確認口頭傾咗咩（紀錄信）→ 死線 → 警告信。跳步之後紀錄上企唔穩', '用客觀標準：合約條款、規格、驗收紀錄', '懷疑圍標 → 唔好自己查，上報'], verify: ['合約 SLA 同罰則條款', '公司採購程序'], related: [] },
+    { type: 'fee', premises: null, ordinance: '收費表／租約／公契', dept: '本處', role: '講清楚你冇權改數；做得到嘅係拆明細同申請分期。',
+      procedure: ['攞出收費表／通告／同類個案', '「點解隔籬唔使」要正面答', '本處疏忽（例如冇出通知）→ 認，豁免按程序報上去，唔好即場應承'], verify: ['收費表', '豁免／分期申請程序'], related: [] },
+    { type: 'data', premises: null, ordinance: '個人資料（私隱）條例（第486章）', dept: '個人資料私隱專員公署', role: '收集、保存、查閱都有規範。CCTV 片段畀邊個睇、住戶資料轉介邊個，都要有依據。',
+      procedure: ['查公司私隱政策同 CCTV 指引', '第三方索取片段 → 按程序，唔好口頭答應', '對其他住戶講「同類個案」可以，講得出邊個單位就唔可以'], verify: ['PCPD CCTV 指引', '公司資料保存期'], related: [] },
+    { type: 'staff', premises: null, ordinance: '公司人事政策；如涉紀律程序按程序行', dept: '本處／人事部', role: '目標係之後合作得落去。已入正式投訴或紀律程序 → 唔好私下擺平。',
+      procedure: ['揀時間地點（唔好櫃檯、唔好即場）', '先修復安全感（對比法）', '講事實唔講推論', '記低，但話畀對方知你會記低'], verify: ['公司紀律程序'], related: [] },
+    { type: 'other', premises: null, ordinance: '按個案', dept: '按個案', role: '先答：呢單屬邊種處所？', procedure: ['分類個案', '查來源'], verify: ['全部'], related: [] },
+  ];
+
+  const LICENCE_NOTE = '物業管理服務條例（第626章）牌照條件：以持牌人身分發出嘅信件、通知、名片等文件上，須清楚顯明地註明姓名及牌照號碼。房委會直接聘用嘅屋邨管理人員適用情況可能唔同——唔確定就向公司或監管局查清楚。';
+
+  const SOURCES = [
+    { name: '電子版香港法例', url: 'https://www.elegislation.gov.hk', note: '條例原文，中英對照，有生效日期' },
+    { name: '物業管理業監管局', url: 'https://www.pmsa.org.hk', note: '操守守則、良好作業指南、發牌、紀律' },
+    { name: '滲水投訴調查聯合辦事處', url: 'https://www.waterseepage.gov.hk', note: '新舊程序、階段、常見問題' },
+    { name: '食物環境衞生署', url: 'https://www.fehd.gov.hk', note: '分區聯辦處聯絡' },
+    { name: '屋宇署', url: 'https://www.bd.gov.hk', note: '樓宇安全、僭建' },
+    { name: '個人資料私隱專員公署', url: 'https://www.pcpd.org.hk', note: 'CCTV、住戶資料指引' },
+    { name: '競爭事務委員會', url: 'https://www.compcomm.hk', note: '樓宇維修圍標' },
+    { name: '香港法律資訊中心', url: 'https://www.hklii.hk', note: '判例全文' },
+    { name: '申訴專員公署', url: 'https://www.ombudsman.hk', note: '調查報告——睇程序實際邊度出錯' },
+    { name: '熱線 1823', url: 'tel:1823', note: '政府一站式熱線' },
+  ];
+
+  // 手段階梯（謀攻）。level 0–3。
+  const LADDER = [
+    { level: 0, name: '非正式溝通', classic: '伐謀', desc: '改變對方嘅盤算——令佢自己覺得配合對佢有利。上門、電話、傾。', cost: '最低' },
+    { level: 1, name: '借助第三方', classic: '伐交', desc: '業主、家人、法團、社工、環保署量度、測漏報告——用客觀第三方做錨。', cost: '中' },
+    { level: 2, name: '正式程序', classic: '伐兵', desc: '紀錄信、警告信、沒收按金、部門轉介。關係轉硬。', cost: '高' },
+    { level: 3, name: '法律／租約行動', classic: '攻城', desc: '租約行動、法律程序。最貴、最慢，而且要問法律部門或上級。', cost: '最高' },
+  ];
+
+  const SEVEN = [
+    '邊方企得住道理？（條款、紀錄、報告）',
+    '邊方嘅人更有能力同時間處理呢件事？',
+    '時機同場地對邊方有利？',
+    '邊方嘅程序行得更嚴？',
+    '邊方嘅實力更大？（職權、關係、時間、耐性）',
+    '邊方更熟呢類事？',
+    '邊方嘅賞罰更確實？（你講嘅後果做唔做得到？佢嘅威脅呢？）',
+  ];
+
+  const FIVE = [
+    { key: 'dao', name: '道', q: '上下同唔同心？上司、保安、清潔隊撐唔撐你做落去？' },
+    { key: 'tian', name: '天', q: '時機。對方而家有冇其他壓力？啱啱發生咗咩令佢特別硬？' },
+    { key: 'di', name: '地', q: '場地。門口、辦公室、櫃檯、書面、正式程序——邊度打？' },
+    { key: 'jiang', name: '將', q: '你。有冇時間精力推到尾？講嘅嘢做唔做得到？' },
+    { key: 'fa', name: '法', q: '制度。程序、紀錄、跟進機制齊唔齊？出咗信之後有冇人跟？' },
+  ];
+
+  const ANGER_CHECK = [
+    '我而家想要嘅係佢改善，定係我想佢知道我唔係好蝦？',
+    '換咗另一個住戶做同一件事，我會唔會都咁處理？',
+    '我份稿入面有冇一句係寫嚟出氣嘅？',
+  ];
+
+  // 書面唔應該出現嘅字眼
+  const BANNED = [
+    { re: /屢勸不聽|態度惡劣|置若罔聞|情緒激動|大吵大鬧|蠻不講理/g, why: '情緒形容詞——法律程序幫唔到你，反而顯得偏頗' },
+    { re: /顯然|明顯地|根本/g, why: '推論當事實——改寫成可核實嘅事實（日期、次數）' },
+    { re: /盡快|稍後|密切留意|適時/g, why: '等於冇講——寫得出嘅日期先寫' },
+    { re: /恕難接納|恕不受理/g, why: '冷，而且冇畀出路——改用「本處並無酌情權限，可以協助嘅係……」' },
+    { re: /自行處理|自行與.{0,6}交涉/g, why: '升級投訴嘅第一步' },
+    { re: /既定政策|政策使然/g, why: '等於「我唔會幫你諗」' },
+    { re: /據其他住戶反映|據悉/g, why: '未經核實嘅第三方講法——你要孭呢句' },
+    { re: /疏忽|失職|導致.{0,4}損失/g, why: '有法律含義——唔係你個層級可以認；認「慢」、認「溝通唔足」先安全' },
+    { re: /如有查詢請聯絡本處/g, why: '關係殺手——寫低實際邊個、點搵' },
+    { re: /前任|上手同事|另一部門/g, why: '唔好賴前同事／其他部門——對外你哋係同一個辦事處' },
+  ];
+
+  // 信件種類同結構（written-replies）
+  const LETTER_KINDS = {
+    reply:   { label: '覆投訴信', purpose: '要對方覺得有人做緊嘢，同埋唔使佢再追', order: ['認低（慢、溝通唔足、令對方麻煩）', '標籤對方最關注嘅嘢', '做咗咩（事實，有日期）', '對比法：呢封信唔係咩', '下一步，要有日期', '聯絡方法（有名有姓）'] },
+    record:  { label: '紀錄信', purpose: '口頭傾完即日出，留底', order: ['確認幾時、同邊個、用咩渠道傾過', '對方應承咗咩、幾時', '「如與理解有異，請於兩個工作天內回覆」'] },
+    refuse:  { label: '拒絕信', purpose: '拒絕但唔傷感情', order: ['認情緒', '講清楚做唔到（同點解冇權）', '講做得到咩（列出選項）', '下一步（日期、邊個）'] },
+    warning: { label: '警告信', purpose: '要紀錄，唔係要改善——出之前確認已經行過口頭同紀錄信', order: ['事實（日期、次數、條款）', '違反邊條', '時限', '後果', '留缺口：「如與本處理解有異，請於某日前回覆」'] },
+    access:  { label: '安排檢查通知', purpose: '要對方配合——軟、短、重點喺對方嘅好處', order: ['對比法：唔係查你、唔係要你賠，係排除你', '建議時間（畀對方揀）', '大概幾耐、邊個上', '聯絡方法'] },
+    notice:  { label: '通告／提示', purpose: '大堂通告或者提示信', order: ['講事實同要求', '時限', '協助（邊個幫手）', '聯絡'] },
+  };
+
+  const LETTER_TEMPLATES = {
+    reply: ({ recipient, unit, date, receivedDate, concern, done, notWhat, nextDate, replyDate, officer, licence, phone, estate }) =>
+`${recipient || '台端'}${unit ? '（' + unit + '）' : ''}：
+
+本處收到 台端於${receivedDate || '［日期］'}的來函／來電，得悉事件至今仍未解決，令 台端需要多次跟進，本處對此深表歉意。
+
+本處理解 台端最關注的是${concern || '［對方最關注嘅嘢——唔係賠償，係徹底根治？定係有人主動覆命？］'}。
+
+就此，本處已${done || '［做咗咩，要有日期：於八月十二日及八月二十六日兩度嘗試安排上層單位進行檢查］'}。
+
+本處並非${notWhat || '要求 台端自行與鄰戶交涉，亦不會因此停止跟進'}。
+
+本處將於${nextDate || '［日期］'}前${'［下一步動作］'}，並於${replyDate || '［日期］'}或之前以書面回覆 台端，無論屆時是否已有結果。
+
+如有任何查詢，請直接聯絡本人（${officer || '［姓名］'}，電話 ${phone || '［電話］'}）。
+
+${estate || '［屋邨／物業名稱］'}管理處
+${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
+${date}`,
+
+    record: ({ recipient, date, talkDate, channel, agreed, officer, licence, phone, estate }) =>
+`${recipient || '［對方／公司名稱］'}：
+
+謹此確認本人與 ${recipient || '貴公司／台端'}於${talkDate || date}${channel ? '以' + channel : ''}的討論內容如下：
+
+${agreed || '［對方應承咗咩、幾時：貴公司將於九月十九日前補回八月三十日及九月二日兩宗未完成的工單，並於九月二十二日前提交更新後的當值人員名單。］'}
+
+如與 ${recipient ? '貴方' : '台端'}理解有異，請於兩個工作天內回覆本人（電話 ${phone || '［電話］'}）。
+
+${estate || '［屋邨／物業名稱］'}管理處
+${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
+${date}`,
+
+    refuse: ({ recipient, unit, date, feeling, cannot, can, deadline, officer, licence, phone, estate }) =>
+`${recipient || '台端'}${unit ? '（' + unit + '）' : ''}：
+
+本處理解 台端認為${feeling || '［對方嘅睇法：有關費用不應由 台端承擔］'}。
+
+惟${cannot || '［做唔到嘅原因：有關收費乃按既定收費表計算，本處並無酌情調整的權限］'}。
+
+本處可以協助的是：
+${can || '（一）提供費用的逐項計算明細；\n（二）代為申請分期繳付。'}
+
+如 台端需要上述安排，請於${deadline || '［日期］'}前通知本人（${officer || '［姓名］'}，電話 ${phone || '［電話］'}）。
+
+${estate || '［屋邨／物業名稱］'}管理處
+${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
+${date}`,
+
+    warning: ({ recipient, unit, date, facts, clause, deadline, consequence, officer, licence, phone, estate }) =>
+`${recipient || '［對方／公司名稱］'}${unit ? '（' + unit + '）' : ''}：
+
+有關${'［事項］'}，本處紀錄如下：
+
+${facts || '［可核實嘅事實，有日期同次數：本處於八月十二日、八月二十六日及九月九日三度以書面通知……］'}
+
+上述情況與${clause || '［合約／租約／公契第幾條］'}的規定不符。
+
+現請 ${recipient ? '貴方' : '台端'}於${deadline || '［日期］'}前${'［要求嘅動作］'}。如屆時仍未辦妥，本處將${consequence || '［講得出口而且做得到嘅後果］'}。
+
+如與本處理解有異，請於${deadline || '［日期］'}前以書面回覆本人（${officer || '［姓名］'}，電話 ${phone || '［電話］'}）。
+
+${estate || '［屋邨／物業名稱］'}管理處
+${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
+${date}`,
+
+    access: ({ recipient, unit, date, purpose, options, duration, officer, licence, phone, estate }) =>
+`${recipient || '台端'}${unit ? '（' + unit + '）' : ''}：
+
+本處正跟進${purpose || '［位置］的滲水情況'}。本處並非認為問題源於 台端單位，亦非要求 台端承擔任何責任，而是希望進行簡單檢查以排除 台端單位，以便本處向其他方向跟進。
+
+檢查約需${duration || '三十分鐘'}，由本處職員陪同進行。 台端可選擇以下時間，或另行提出方便的時間：
+${options || '（一）［日期 時間］\n（二）［日期 時間］'}
+
+請於方便時致電本人（${officer || '［姓名］'}，電話 ${phone || '［電話］'}）確認。
+
+${estate || '［屋邨／物業名稱］'}管理處
+${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
+${date}`,
+
+    notice: ({ date, subject, facts, request, deadline, help, officer, licence, phone, estate }) =>
+`通告：${subject || '［事項］'}
+
+各位住戶：
+
+${facts || '［事實同原因］'}
+
+請各位於${deadline || '［日期］'}前${request || '［要求］'}。${help ? '如需協助，' + help : ''}
+
+如有查詢，請聯絡${officer || '［姓名］'}（電話 ${phone || '［電話］'}）。
+
+${estate || '［屋邨／物業名稱］'}管理處
+${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
+${date}`,
+  };
+
+  // 對話 playbook（scenarios.md 濃縮）
+  const SCENARIOS = {
+    access_refused: { label: '上層住戶唔肯開門畀你查滲水', types: ['seepage'],
+      fear: ['驚查出僭建、改動、未批裝修', '驚一開門等於認責任要賠', '驚搞污糟、打爛嘢、敲牆', '屋企有老人、病人、唔方便', '純粹憎上次嗰次接觸'],
+      steps: [
+        ['開場（Accusation Audit）', '「陳生，上嚟之前我想講先——我知你會覺得，明明唔係你間屋出事，點解要嚟煩你，仲要開門畀人入嚟搞。你咁諗好合理。」'],
+        ['講清楚呢次唔係咩（對比法）', '「我今次上嚟唔係查你間屋有冇問題，亦都唔係話你要賠錢。我係想排除你呢邊，等我可以去查第二度。」'],
+        ['Labelling + 停', '「聽落你最擔心嘅，唔係畀我入嚟，係入完之後會有手尾跟。」（停三秒）'],
+        ['Calibrated question', '「咁要點樣安排，你先會覺得安心？」——佢自己提條件（有人陪、星期六、唔准影相），通常你都應承到'],
+        ['仍然企硬——「No」向問題', '「係咪連我企喺門口望一望廁所嗰邊都唔得？」'],
+        ['真係唔得——講後果但唔威脅', '「明白。咁我要照實記錄你唔方便安排入屋，跟住轉返上去。呢樣我唔想㗎，因為之後就唔係我同你傾，係上面嗰邊嘅程序。你確定要咁行？」'],
+      ],
+      pushback: [
+        ['「唔關我事，你哋自己搞掂佢啦。」', '「唔關你事？」（停）→ 「我明。咁我點樣同樓下嗰位交代？」'],
+        ['「你哋上次都係咁講，之後又冇下文。」', '「你鬧得啱，呢單嘢拖咗成個月。今次我講得出嘅係：星期四之前我會覆你，就算未有結果。」'],
+        ['「你話得事嘅咩？叫你阿頭落嚟。」', '「呢單嘢係我跟。你想我而家即刻幫你做啲咩？」'],
+      ],
+      stop: '嘗試過兩至三次、有書面紀錄之後，就轉程序。繼續拖只會令樓下投訴人嗰邊你交唔到差。',
+      record: '每次嘗試都記：日期、時間、有冇人應門、講咗咩、對方講咩、下次安排。' },
+    complainant_slow: { label: '投訴人嫌慢／要即刻有答案', types: ['seepage', 'noise', 'other', 'obstruction', 'renovation'],
+      fear: ['要嘅唔係「即刻修好」，係有人認真聽住', '知道下一步係咩', '唔使佢再追'],
+      steps: [
+        ['Accusation Audit', '「我知呢單嘢拖咗好耐，你每次打嚟都要重新講一次，好煩。」'],
+        ['唔好即刻解釋程序', '一解釋「要等上層配合、等測漏報告」，對方聽落就係搵藉口。先聽完。'],
+        ['Labelling', '「聽落你最嬲嘅，唔係等咗幾耐，係冇人主動同你講返情況。」'],
+        ['Calibrated question', '「你想我而家即刻幫你做啲咩？」'],
+        ['畀真嘅時間表', '差：「我哋會盡快跟進。」好：「星期三之前我會覆你，就算未有結果我都會覆你，話你知行到邊。」能做到先講。'],
+        ['主動覆命', '設 reminder，就算冇進展都覆。投訴人最記得嘅係你有冇主動 call 返佢。'],
+      ],
+      pushback: [
+        ['「佢唔肯開門你就冇辦法？咁我搵議員。」', '「我唔可以應承你樓上一定會開門，呢樣我控制唔到。我應承到嘅係，我星期五之前會再上去一次，同埋無論有冇結果我都會覆你。」'],
+        ['情緒好大、講錯日期', '唔好打斷、唔好糾正細節。等佢講完，放慢語氣，labelling。正確日期之後喺書面紀錄寫返。'],
+      ],
+      stop: '千祈唔好講「佢唔肯配合，我冇辦法」——等於叫佢自己搞掂，投訴即刻升級去區議員或總部。',
+      record: '記低你應承咗幾時覆佢。系統會提你。' },
+    contractor_delay: { label: '承辦商拖延或者推卸責任', types: ['contractor', 'renovation'],
+      fear: ['先問自己：要改善定要紀錄？要改善：口頭優先。要紀錄：書面、列條款。', '兩樣都要：口頭 → 紀錄信 → 死線 → 警告信'],
+      steps: [
+        ['Accusation Audit', '「我知你哋會覺得，我哋淨係識追進度，唔理現場幾難做。」'],
+        ['講事實，唔好講推論', '「合約寫三日內到場。呢三單，第一單五日、第二單八日、第三單到依家未到。」'],
+        ['標明推論再問', '「我開始諗係咪人手唔夠，唔知我理解啱唔啱？你嗰邊實際情況係點？」'],
+        ['要佢交方案', '「你哋預咗點樣追返個進度？」「要幾多資源先追得返？」'],
+        ['用客觀標準', '「不如我哋一齊睇返份合約嗰段點寫，再決定點做。」'],
+        ['落實', '「咁我記低——星期五收工前你哋補返呢兩單，同埋下星期一出返個更表畀我。如果星期五做唔到，我要書面通知返上去，呢個我停唔到。」'],
+      ],
+      pushback: [
+        ['「呢個唔係我哋嗰部分。」', '「我明你嘅講法。咁如果唔係你哋嗰部分，你估係邊度出事？」——要佢幫你查，唔係要佢認'],
+        ['「真係做唔到㗎。」', '「做唔到？」（停）'],
+        ['畀個日期你就算', '「你哋預咗點樣追返？」比「幾時做好」強，因為要佢交方案'],
+      ],
+      stop: '口頭傾完當日出紀錄信。死線一過，警告信，唔好再軟。',
+      record: '即日紀錄信：邊個、應承咗咩、幾時、「如與理解有異請於兩個工作天內回覆」。' },
+    corridor: { label: '走廊、大堂堆放雜物', types: ['obstruction', 'escape'],
+      fear: ['多數係長者、劏房戶、住得逼嘅家庭——唔係想阻人，係冇地方放', '贏咗對話但令長者無地方擺嘢，係差嘅結果'],
+      steps: [
+        ['先分類', '阻塞走火通道、消防設備、逃生指示 → 即刻處理，冇得傾。純粹阻眼 → 有得傾。'],
+        ['對比法', '「陳婆婆，我上嚟唔係想你即刻掉晒佢。我係想同你傾下點擺，先唔會阻到人走火。」'],
+        ['Calibrated question', '「呢啲嘢平時邊啲係要用、邊啲係放低咗好耐？」「如果要留返一兩樣，你會揀邊樣？」'],
+        ['畀實際協助', '講得出邊個可以幫手搬（管理員、清潔隊、社區隊）。講唔出就唔好淨係下通牒。'],
+        ['支援問題就轉介', '堆到出走廊，好多時背後有嘢（囤積、認知障礙、照顧問題）。紀錄寫明建議轉介社區服務隊／社工。'],
+        ['時限合理具體', '「咁我哋講定，今個星期日之前搬返入去，我星期一上嚟望一望。得唔得？」'],
+      ],
+      pushback: [
+        ['「隔籬都有放，點解淨係搵我？」', '「你講得啱，同層我都會逐戶傾。我而家想同你傾嘅係你呢度點擺。」'],
+        ['「我冇地方放。」', '「冇地方放？」（停）→ 「如果要留返一兩樣，你會揀邊樣？」'],
+      ],
+      stop: '安全風險唔入酌情。觀感問題：兩次上門加一封提示信之後，轉程序。',
+      record: '相片、位置、物品、傾咗咩、死線。弱勢住戶寫明轉介建議。' },
+    fee_dispute: { label: '收費／按金爭拗', types: ['fee', 'renovation'],
+      fear: ['好少係純粹為錢', '覺得冇人事先講過', '覺得標準唔一致（點解隔籬唔使）', '覺得冇得申辯'],
+      steps: [
+        ['Accusation Audit', '「你收到張單嗰陣應該幾火，覺得乜都未同你講過就要畀錢。」'],
+        ['Labelling', '「聽落你最介意嘅唔係個數目，係冇人事先知會過你。」'],
+        ['講清楚你嘅權限', '「我想講清楚先，個數係跟返表定，我冇權改。」早講好過遲講。'],
+        ['講你做得到咩', '「我做得到嘅有兩樣：幫你逐項拆開睇點計出嚟，同埋幫你申請分期。你想先做邊樣？」'],
+        ['用客觀標準', '攞出收費表／合約／通告／同類個案。「點解隔籬唔使」一定要正面答——答唔到就查清楚先覆。'],
+        ['本處真係疏忽咗', '認。豁免按程序報上去，唔好即場應承：「我會將呢個情況報返上去，但我批唔到。我星期三之前覆你。」'],
+      ],
+      pushback: [
+        ['「你哋根本冇通知過我。」', '查紀錄先答。有出過：「通知係某月某日貼／寄出，我可以畀返份你。」冇：認，報上去。'],
+        ['「我唔畀，你吹咩。」', '「我唔係嚟迫你即刻畀錢。我係想同你傾清楚筆數點計。」'],
+      ],
+      stop: '你批唔到嘅嘢唔好扮有。傾咗十分鐘先發現你改唔到，佢會覺得畀你玩。',
+      record: '拆開嘅明細、分期申請、報上去嘅日期。' },
+    staff_conflict: { label: '同事或前線員工衝突', types: ['staff'],
+      fear: ['住戶見完可以走；同事係日日對住', '目標係之後合作得落去'],
+      steps: [
+        ['揀時間同地方', '唔好櫃檯、唔好有其他人、唔好啱啱發生完個陣。'],
+        ['先修復安全感（對比法）', '「搵你唔係想追究邊個啱邊個錯，亦都唔係要寫入去你份嘢度。我係想搞清楚，之後點樣唔好再發生。」'],
+        ['講事實，唔好講推論', '差：「你對住住戶嗰個態度好差。」好：「琴日下晝喺大堂，我聽到你講咗『你識唔識睇字㗎』。我開始諗當時係咪發生咗啲我唔知道嘅嘢——實際係點？」'],
+        ['真心聽', '七八成呢類衝突，聽完之後你嘅理解會改。'],
+        ['語氣留有餘地', '「我可能睇漏咗嘢，你話我知。」對方一反駁你就硬返，之後佢永遠唔會再講真話。'],
+        ['落到具體行動', '下次遇到同類情況點做、有咩支援、幾時再傾。'],
+        ['記低，但話畀對方知', '「我會喺檔案記返今日傾咗咩，內容就係我哋啱啱講嗰啲，唔會加嘢。」'],
+      ],
+      pushback: [
+        ['「你係咪想搵我笨？」', '「唔係。我唔係想搵人孭鑊。我係想知當時發生咗咩。」'],
+      ],
+      stop: '已經去到正式投訴或紀律層面 → 程序要照行，唔好私下擺平。',
+      record: '傾咗咩、行動、幾時再傾。內容同對方講嗰啲一樣。' },
+    three_party: { label: '三方糾紛（樓上、樓下，夾埋你）', types: ['seepage', 'noise'],
+      fear: ['你變咗傳話人，傳話人一定會被兩邊當成對家', '唔好傳情緒，只傳事實同下一步'],
+      steps: [
+        ['對投訴嗰邊', '「我明呢件事拖咗好耐，而且唔係你整出嚟嘅，要你等，好唔抵。」「我唔可以應承你樓上一定會開門。我應承到嘅係，星期五之前再上去一次，無論有冇結果都覆你。」'],
+        ['對被投訴嗰邊', '「我今次上嚟唔係話你要賠錢，係想排除你，等我可以去查第二度。」'],
+        ['四個原則', '唔好喺一方面前評價另一方；唔好承諾一方你會令另一方做咩；兩邊分開講；用客觀第三方做錨（測漏報告、量度）。'],
+        ['證據清楚嗰陣', '「份報告出咗，源頭係你單位個防水層。我知呢個唔係你想聽嘅結果。我而家想傾嘅唔係邊個錯，係點樣整同點分擔——呢方面係有得傾嘅。」'],
+      ],
+      pushback: [
+        ['「樓下話我唔合作？佢屈我！」', '唔好傳話。「樓下嗰邊個天花仲係濕緊。我要入你單位睇一睇先可以排除你。」'],
+      ],
+      stop: '三人會面通常係升級，唔係解決——除非兩邊都冷靜同明確想見面。',
+      record: '兩邊分開記，記事實唔記情緒。' },
+  };
+
+  const PHRASES = [
+    { cat: '開場：Accusation Audit', items: ['「上嚟之前我想講先——你可能覺得我哋又係拖，上次都係話跟進，之後又冇聲氣。呢單嘢係慢咗，我唔會拗。」', '「我知你而家心諗，明明唔係我間屋出事，點解要嚟煩我。呢個諗法好合理。」', '「你收到張單嗰陣應該幾火，覺得乜都未做過就要畀錢。」', '「我知你哋會覺得，我哋成日淨係識得追進度，唔理你哋現場實際幾難做。」'] },
+    { cat: 'Labelling（講完收聲）', items: ['「聽落你係覺得，明明唔係你嘅問題，而家要你配合，好唔抵。」', '「睇嚟你最擔心嘅，唔係開唔開門，係開完之後會有手尾跟。」', '「好似呢件事已經煩咗你好耐。」', '「睇嚟你覺得我哋淨係識得出信，冇真係落手做嘢。」'] },
+    { cat: 'Mirroring（重複尾三個字，停三秒）', items: ['「唔好再搵你？」', '「做唔到？」', '「好多次？」'] },
+    { cat: 'Calibrated Questions', items: ['「我可以點樣做，先至幫到你？」', '「你想我點樣處理，你先覺得公道？」', '「咁我點樣同樓下嗰位交代？」', '「你哋預咗點樣追返個進度？」', '「如果下星期仲係同一個情況，我哋點算？」', '「你想我而家即刻幫你做啲咩？」'] },
+    { cat: '「No」向問題', items: ['「係咪我提出咩你都一定唔會考慮？」', '「你係咪已經決定咗唔想我哋再跟呢單嘢？」', '「係咪連畀我五分鐘講一講都唔得？」'] },
+    { cat: '對比法（「唔係」行先）', items: ['「我唔係嚟追究邊個錯。我係想知點樣停到佢漏。」', '「我唔係話你哋唔專業。我係擔心呢個進度到月尾交唔到貨。」', '「我唔係想你即刻畀錢。我係想同你傾清楚筆數點計。」', '「我唔係想你搬走啲嘢即刻。我係想同你傾下點樣擺先唔阻到走火通道。」'] },
+    { cat: '拒絕但唔傷感情', items: ['「我明你覺得呢筆錢唔應該你出。呢樣我真係批唔到，因為條數係跟返表定。我做得到嘅係，幫你申請分期，同埋幫你問清楚點解會計到咁多。你想我兩樣都做定係先做一樣？」', '「今日真係去唔到，我唔想應承咗又失你信。我可以做到嘅係，聽朝十點前一定到。」'] },
+    { cat: '收尾（邊個、做咩、幾時、點覆）', items: ['「等我講一次睇啱唔啱——你唔係唔肯配合，你係唔想再畀人嘈醒，亦唔想自己間屋無端端變咗工地。係咪咁？」', '「咁我哋講定——星期四朝早十點，我同師傅上去睇個天花，大概半個鐘。我今日出前會 send 個短訊確認畀你。啱唔啱？」', '「咁不如我哋星期四朝早十點上嚟望一望，大概半個鐘，你睇下得唔得？」'] },
+    { cat: '唔好講嘅嘢', items: ['✗「你冷靜啲先。」— 冇人聽完會冷靜', '✗「我明白你嘅感受。」— 空泛，改用具體 labelling', '✗「呢個係政策嚟㗎。」— 等於「我唔會幫你諗」', '✗「呢樣唔關我哋事。」— 改成「呢部分唔喺我哋範圍，但我可以幫你搵返啱嘅人」', '✗「你有乜證據？」— 改成「有冇相或者當時嘅紀錄？有嘅話我啲跟進會快好多」', '✗「我盡量啦。」— 冇承諾等於冇嘢', '✗「上次嗰個同事⋯⋯」— 住戶眼中你哋係同一個辦事處'] },
+  ];
+
+  const WEAKNESS = [
+    { name: '必死', desc: '咩都要企硬、咩都要贏到底 → 燒死自己' },
+    { name: '必生', desc: '咩都唔想沾手、次次讓 → 之後所有人都食住你' },
+    { name: '忿速', desc: '火爆 → 對方一激就出事' },
+    { name: '廉潔', desc: '太怕被人話唔專業 → 為咗面子做錯決定' },
+    { name: '愛民', desc: '太錫住戶 → 被無日無之嘅要求纏住，正事做唔完' },
+  ];
+
+  const SEEPAGE_NEW_PROCEDURE_DATE = '2026-07-16';
+
+  return { PREMISES, CASE_TYPES, ROUTES, LICENCE_NOTE, SOURCES, LADDER, SEVEN, FIVE, ANGER_CHECK, BANNED, LETTER_KINDS, LETTER_TEMPLATES, SCENARIOS, PHRASES, WEAKNESS, SEEPAGE_NEW_PROCEDURE_DATE };
+})();
+
+</script>
+<script>
+/* 物管日常工作台 —— 主程式。純前端，資料存喺 localStorage。 */
+(function () {
+  'use strict';
+  const R = window.REF;
+  const STORE_KEY = 'pmo.workbench.v1';
+
+  // ---------- 工具 ----------
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+  const pad = (n) => String(n).padStart(2, '0');
+  const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const today = () => isoDate(new Date());
+  const parseDate = (s) => { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const addDays = (s, n) => { const d = parseDate(s); d.setDate(d.getDate() + n); return isoDate(d); };
+  const daysBetween = (a, b) => Math.round((parseDate(b) - parseDate(a)) / 86400000);
+  const addWorkingDays = (s, n) => { const d = parseDate(s); let c = 0; while (c < n) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) c++; } return isoDate(d); };
+  const fmtDate = (s) => s ? s.replace(/-/g, '/') : '—';
+  const cnDate = (s) => { const d = parseDate(s || today()); return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`; };
+  const nowStamp = () => { const d = new Date(); return `${isoDate(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add('hidden'), 2200); }
+  function openModal(html) { $('#modal').innerHTML = html; $('#modalBackdrop').classList.remove('hidden'); const f = $('#modal input, #modal select, #modal textarea'); if (f) f.focus(); }
+  function closeModal() { $('#modalBackdrop').classList.add('hidden'); $('#modal').innerHTML = ''; }
+  function confirmDialog(msg, onYes) {
+    openModal(`<h2>確認</h2><p>${esc(msg)}</p><div class="btn-row"><button class="btn danger" id="mYes">確定</button><button class="btn" id="mNo">取消</button></div>`);
+    $('#mYes').onclick = () => { closeModal(); onYes(); }; $('#mNo').onclick = closeModal;
+  }
+  function formData(form) { const o = {}; new FormData(form).forEach((v, k) => { o[k] = typeof v === 'string' ? v.trim() : v; }); $$('input[type=checkbox]', form).forEach((c) => { o[c.name] = c.checked; }); return o; }
+  const opt = (obj, sel, labelKey = 'label') => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${esc(typeof v === 'string' ? v : v[labelKey])}</option>`).join('');
+
+  // ---------- 狀態 ----------
+  const blank = () => ({ version: 1, settings: { officerName: '', licenceNo: '', estate: '', office: '', phone: '', email: '', theme: 'auto' }, cases: [], contractors: [], inspections: [], letters: [], seq: 1 });
+  let S = blank();
+  function load() { try { const raw = localStorage.getItem(STORE_KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) { console.warn('load failed', e); } applyTheme(); }
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { toast('儲存失敗：瀏覽器儲存空間可能已滿或被封鎖'); } }
+  function applyTheme() { const t = S.settings.theme || 'auto'; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
+  const caseById = (id) => S.cases.find((c) => c.id === id);
+  const contractorById = (id) => S.contractors.find((c) => c.id === id);
+  const STATUS = { open: '跟進中', waiting: '等第三方', escalated: '已升級', closed: '已結案' };
+  const CHANNELS = ['上門', '電話', '櫃檯', '書面', 'WhatsApp／短訊', '會議', '巡查'];
+
+  function newCase(partial) {
+    const ref = `C${String(S.seq++).padStart(4, '0')}`;
+    return Object.assign({ id: uid(), ref, title: '', type: 'other', premises: 'private', block: '', unit: '', complainant: '', complainantContact: '', respondent: '', respondentContact: '', contractorId: '', openedAt: today(), status: 'open', escalation: 0, nextAction: '', nextDue: '', promisedReplyBy: '', notes: '', safety: false, vulnerable: false, prep: { goal: '', bottom: '', batna: '', theirBatna: '', interest: '' }, seven: {}, five: {}, triage: '', triageReason: '', log: [], lastProgressAt: today(), closedAt: '', closedReason: '', attempts: 0, seepage: { moisture: '', noticeAt: '', complaintAt: '' }, angerNote: '' }, partial || {});
+  }
+  const isSafety = (c) => c.safety || (R.CASE_TYPES[c.type] && R.CASE_TYPES[c.type].safety);
+  const isOpen = (c) => c.status !== 'closed';
+  const stalledDays = (c) => daysBetween(c.lastProgressAt || c.openedAt, today());
+
+  // ---------- 示範資料 ----------
+  function seedDemo() {
+    const t = today();
+    const con = { id: uid(), name: '永固工程有限公司', contact: '陳生', phone: '9123 4567', contract: '2026 年度水電維修合約', slaDays: 3, notes: '', orders: [
+      { id: uid(), desc: '3座 12樓 走廊水喉漏水', issuedAt: addDays(t, -12), dueAt: addDays(t, -9), doneAt: addDays(t, -7), status: 'done' },
+      { id: uid(), desc: '5座 地下 大堂燈掣', issuedAt: addDays(t, -10), dueAt: addDays(t, -7), doneAt: '', status: 'open' },
+      { id: uid(), desc: '2座 天台 排水渠淤塞', issuedAt: addDays(t, -4), dueAt: addDays(t, -1), doneAt: '', status: 'open' },
+    ] };
+    S.contractors.push(con);
+    const c1 = newCase({ title: '3座 15樓 天花滲水（樓上 16樓）', type: 'seepage', premises: 'private', block: '3座', unit: '15樓 A室', complainant: '李太', complainantContact: '6xxx xxxx', respondent: '16樓 A室 陳生', openedAt: addDays(t, -34), escalation: 0, nextAction: '第三次上門，約咗星期四朝早十點', nextDue: addDays(t, 2), promisedReplyBy: addDays(t, 1), attempts: 2, lastProgressAt: addDays(t, -6), seepage: { moisture: '48', noticeAt: '', complaintAt: addDays(t, -34) },
+      prep: { goal: '陳生星期四畀我哋入去望廁所同露台，半個鐘', bottom: '如果第三次都唔得，記錄後轉上級行正式程序', batna: '書面通知＋轉介聯辦處', theirBatna: '拒絕 → 聯辦處程序，可申請手令入屋', interest: '驚查出露台改動；驚要賠' },
+      log: [
+        { at: addDays(t, -34) + ' 10:20', channel: '電話', party: '李太', said: '天花滴水兩星期，朝早明顯', outcome: '開案，同日上去睇', next: '上 16 樓' },
+        { at: addDays(t, -30) + ' 15:00', channel: '上門', party: '16樓 陳生', said: '「唔關我事，你哋自己搞掂佢」', outcome: '冇入到，有應門', next: '再約' },
+        { at: addDays(t, -14) + ' 11:00', channel: '上門', party: '16樓 陳生', said: '「上次都係咁講」；問清楚後係驚露台改動被查', outcome: '答應考慮星期四', next: '星期四十點' },
+        { at: addDays(t, -6) + ' 09:30', channel: '電話', party: '李太', said: '問進度', outcome: '應承星期五前覆，有冇結果都覆', next: '覆李太' },
+      ] });
+    const c2 = newCase({ title: '5座 8樓 走廊雜物阻塞', type: 'obstruction', premises: 'ha_rental', block: '5座', unit: '8樓 F室', complainant: '同層住戶', respondent: '陳婆婆', openedAt: addDays(t, -20), nextAction: '星期一上去望一望有冇搬返入去', nextDue: addDays(t, -1), vulnerable: true, lastProgressAt: addDays(t, -8),
+      log: [{ at: addDays(t, -20) + ' 14:00', channel: '巡查', party: '—', said: '走廊有三個紙箱同一張摺凳，未阻走火通道', outcome: '拍照，分類為觀感問題', next: '上門傾' }, { at: addDays(t, -8) + ' 16:00', channel: '上門', party: '陳婆婆', said: '「冇地方放」；獨居，行動不便', outcome: '同意留摺凳，紙箱清潔隊幫手搬', next: '星期日前搬' }] });
+    const c3 = newCase({ title: '2座 地下 商舖裝修噪音超時', type: 'renovation', premises: 'commercial', block: '2座', unit: '地下 3號舖', complainant: '2座 1樓 多戶', respondent: '祥記茶餐廳（裝修承辦商）', openedAt: addDays(t, -75), status: 'open', escalation: 1, nextAction: '', nextDue: '', lastProgressAt: addDays(t, -65),
+      log: [{ at: addDays(t, -75) + ' 20:30', channel: '電話', party: '1樓 住戶', said: '晚上八點半仍然鑽牆', outcome: '即時上去叫停', next: '通知承辦商' }, { at: addDays(t, -65) + ' 10:00', channel: '書面', party: '承辦商', said: '—', outcome: '出咗提示信', next: '' }] });
+    const c4 = newCase({ title: '1座 3樓 走火通道被單車阻塞', type: 'escape', premises: 'private', block: '1座', unit: '3樓 樓梯', complainant: '保安', respondent: '3樓 C室', openedAt: t, nextAction: '即時清走，通知住戶', nextDue: t, lastProgressAt: t, log: [] });
+    const c5 = newCase({ title: '承辦商三單工單超時', type: 'contractor', premises: 'private', block: '—', unit: '—', complainant: '本處', respondent: '永固工程有限公司', contractorId: con.id, openedAt: addDays(t, -9), escalation: 0, nextAction: '口頭傾完出紀錄信', nextDue: t, lastProgressAt: addDays(t, -2), log: [{ at: addDays(t, -2) + ' 15:00', channel: '電話', party: '陳生', said: '「人手唔夠，下星期補返」', outcome: '應承星期五前補返兩單', next: '紀錄信' }] });
+    const c6 = newCase({ title: '6座 10樓 裝修按金扣減爭拗', type: 'fee', premises: 'private', block: '6座', unit: '10樓 B室', complainant: '黃先生', openedAt: addDays(t, -40), status: 'closed', closedAt: addDays(t, -5), closedReason: '已提供逐項明細，住戶接受分期', lastProgressAt: addDays(t, -5), log: [] });
+    S.cases.push(c1, c2, c3, c4, c5, c6);
+    S.demo = true;
+    S.inspections.push({ id: uid(), at: addDays(t, -1), block: '1座', area: '地下大堂、3樓樓梯', findings: '3樓樓梯有單車阻塞走火通道', safety: true, caseId: c4.id }, { id: uid(), at: t, block: '4座', area: '天台、水錶房', findings: '無異常', safety: false, caseId: '' });
+    save();
+  }
+
+  // ---------- 路由 ----------
+  const TITLES = { today: '今日', cases: '個案', inspections: '巡查紀錄', contractors: '承辦商', router: '法規導航', letters: '信件草擬', prep: '對話準備', review: '形勢判斷', settings: '設定／備份' };
+  function route() {
+    const hash = location.hash.replace(/^#\/?/, '') || 'today';
+    const [name, arg] = hash.split('/');
+    $$('#nav a').forEach((a) => a.classList.toggle('active', a.dataset.route === name));
+    $('#topbarTitle').textContent = TITLES[name] || '';
+    $('#sidebar').classList.remove('open');
+    $('#brandEstate').textContent = S.settings.estate || '未設定屋邨';
+    const view = VIEWS[name] || VIEWS.today;
+    $('#main').innerHTML = '';
+    view(arg);
+    window.scrollTo(0, 0);
+  }
+  const VIEWS = {};
+
+  // ---------- 今日 ----------
+  VIEWS.today = function () {
+    const t = today();
+    const open = S.cases.filter(isOpen);
+    const safety = open.filter(isSafety);
+    const overdue = open.filter((c) => c.nextDue && c.nextDue < t);
+    const dueToday = open.filter((c) => c.nextDue === t);
+    const promised = open.filter((c) => c.promisedReplyBy && c.promisedReplyBy <= t);
+    const stalled = open.filter((c) => !isSafety(c) && stalledDays(c) >= 60);
+    const soon = open.filter((c) => c.nextDue && c.nextDue > t && daysBetween(t, c.nextDue) <= 7);
+    const woOverdue = S.contractors.flatMap((k) => k.orders.filter((o) => o.status !== 'done' && o.dueAt && o.dueAt < t).map((o) => ({ k, o })));
+
+    let html = `<h1>${cnDate(t)}</h1>`;
+    if (S.demo) html += `<div class="banner info"><strong>而家顯示嘅係示範資料</strong>個案、承辦商、巡查紀錄全部係虛構例子。開始真正使用之前，去「設定」按「清除全部資料」。</div>`;
+    if (!S.cases.length) html += `<div class="banner info"><strong>開始使用</strong>未有個案。可以先去「設定」填姓名、牌照號碼同屋邨名稱，或者<a href="#" id="loadDemo">載入示範資料</a>睇下個系統點運作。</div>`;
+    if (safety.length) html += `<div class="banner danger"><strong>安全個案：${safety.length} 宗——即時處理，唔入酌情計算</strong>${safety.map((c) => `<a href="#/case/${c.id}">${esc(c.ref)} ${esc(c.title)}</a>`).join('、')}</div>`;
+    html += `<div class="grid cols-4" style="margin-bottom:16px">
+      <div class="stat danger" data-go="overdue"><div class="n">${overdue.length}</div><div class="l">逾期跟進</div></div>
+      <div class="stat warn" data-go="promised"><div class="n">${promised.length}</div><div class="l">應承咗覆嘅（到期）</div></div>
+      <div class="stat accent" data-go="today"><div class="n">${dueToday.length}</div><div class="l">今日要做</div></div>
+      <div class="stat" data-go="stalled"><div class="n">${stalled.length}</div><div class="l">兩個月冇進展</div></div>
+    </div>`;
+    const section = (id, title, arr, note) => `<div class="card" id="sec-${id}"><div class="card-head"><h3>${title}</h3>${note ? `<span class="muted small">${note}</span>` : ''}</div>${arr.length ? `<div class="list">${arr.map(caseItem).join('')}</div>` : '<div class="empty">冇</div>'}</div>`;
+    html += section('promised', '應承咗覆命', promised, '投訴人最記得嘅唔係你幾快解決，係你有冇主動覆返佢。就算冇進展都覆。');
+    html += section('overdue', '逾期跟進', overdue);
+    html += section('today', '今日到期', dueToday);
+    if (woOverdue.length) html += `<div class="card"><div class="card-head"><h3>承辦商工單超時</h3></div><div class="list">${woOverdue.map(({ k, o }) => `<div class="item overdue" data-href="#/contractors/${k.id}"><div class="body"><div class="title">${esc(o.desc)}</div><div class="meta"><span>${esc(k.name)}</span><span>限期 ${fmtDate(o.dueAt)}（超 ${daysBetween(o.dueAt, t)} 日）</span></div></div></div>`).join('')}</div></div>`;
+    html += section('stalled', '連續兩個月冇實質進展——要決定升級定結案', stalled, '唔升級又唔結案，每個月出一封同樣嘅信，係純損耗。去「形勢判斷」盤點。');
+    html += section('soon', '未來七日', soon);
+    $('#main').innerHTML = html;
+    const ld = $('#loadDemo'); if (ld) ld.onclick = (e) => { e.preventDefault(); seedDemo(); route(); toast('已載入示範資料'); };
+    $$('.stat').forEach((s) => s.onclick = () => { const el = $('#sec-' + s.dataset.go); if (el) el.scrollIntoView({ behavior: 'smooth' }); });
+    bindItems();
+  };
+
+  function caseItem(c) {
+    const t = today();
+    const cls = isSafety(c) ? 'safety' : (c.nextDue && c.nextDue < t) ? 'overdue' : (c.nextDue === t) ? 'due' : '';
+    const ct = R.CASE_TYPES[c.type] || R.CASE_TYPES.other;
+    return `<div class="item ${cls}" data-href="#/case/${c.id}"><div>${ct.icon}</div><div class="body"><div class="title">${esc(c.ref)} · ${esc(c.title || '（未命名）')}</div><div class="meta"><span>${esc(ct.label)}</span><span>${esc(c.block)} ${esc(c.unit)}</span>${c.nextAction ? `<span>下一步：${esc(c.nextAction)}</span>` : ''}${c.nextDue ? `<span>期限 ${fmtDate(c.nextDue)}</span>` : ''}${c.promisedReplyBy ? `<span>應承 ${fmtDate(c.promisedReplyBy)} 前覆</span>` : ''}<span class="tag ${c.status === 'closed' ? '' : 'accent'}">${STATUS[c.status]}</span></div></div></div>`;
+  }
+  function bindItems() { $$('[data-href]').forEach((el) => el.onclick = () => { location.hash = el.dataset.href; }); }
+
+  // ---------- 個案列表 ----------
+  let caseFilter = { q: '', type: '', status: 'openOnly', premises: '' };
+  VIEWS.cases = function () {
+    const f = caseFilter;
+    let list = S.cases.slice();
+    if (f.status === 'openOnly') list = list.filter(isOpen); else if (f.status) list = list.filter((c) => c.status === f.status);
+    if (f.type) list = list.filter((c) => c.type === f.type);
+    if (f.premises) list = list.filter((c) => c.premises === f.premises);
+    if (f.q) { const q = f.q.toLowerCase(); list = list.filter((c) => [c.ref, c.title, c.block, c.unit, c.complainant, c.respondent, c.notes].join(' ').toLowerCase().includes(q)); }
+    list.sort((a, b) => (isSafety(b) - isSafety(a)) || ((a.nextDue || '9') > (b.nextDue || '9') ? 1 : -1));
+    $('#main').innerHTML = `<div class="card-head"><h1>個案（${list.length}）</h1><button class="btn primary" id="addCase">新個案</button></div>
+      <div class="filters"><input id="fq" placeholder="搜尋編號、座、單位、人名…" value="${esc(f.q)}">
+      <select id="ft"><option value="">全部類型</option>${opt(R.CASE_TYPES, f.type)}</select>
+      <select id="fp"><option value="">全部處所</option>${opt(R.PREMISES, f.premises)}</select>
+      <select id="fs"><option value="openOnly" ${f.status === 'openOnly' ? 'selected' : ''}>未結案</option><option value="" ${f.status === '' ? 'selected' : ''}>全部</option>${opt(STATUS, f.status)}</select></div>
+      ${list.length ? `<div class="list">${list.map(caseItem).join('')}</div>` : '<div class="empty">冇符合嘅個案</div>'}`;
+    $('#addCase').onclick = () => caseForm();
+    $('#fq').oninput = (e) => { caseFilter.q = e.target.value; VIEWS.cases(); $('#fq').focus(); $('#fq').setSelectionRange(99, 99); };
+    $('#ft').onchange = (e) => { caseFilter.type = e.target.value; VIEWS.cases(); };
+    $('#fp').onchange = (e) => { caseFilter.premises = e.target.value; VIEWS.cases(); };
+    $('#fs').onchange = (e) => { caseFilter.status = e.target.value; VIEWS.cases(); };
+    bindItems();
+  };
+
+  function caseForm(existing, presets) {
+    const c = existing || newCase(presets);
+    openModal(`<h2>${existing ? '編輯個案' : '新個案'}</h2><form id="caseForm">
+      <div class="row full"><div><label>標題</label><input name="title" value="${esc(c.title)}" placeholder="例：3座 15樓 天花滲水（樓上 16樓）" required></div></div>
+      <div class="row"><div><label>類型</label><select name="type">${opt(R.CASE_TYPES, c.type)}</select></div>
+      <div><label>處所類型（決定晒之後所有嘢）</label><select name="premises">${opt(R.PREMISES, c.premises)}</select></div></div>
+      <div class="row"><div><label>座</label><input name="block" value="${esc(c.block)}"></div><div><label>樓層／單位／位置</label><input name="unit" value="${esc(c.unit)}"></div><div><label>開立日期</label><input type="date" name="openedAt" value="${esc(c.openedAt)}"></div></div>
+      <div class="row"><div><label>投訴人</label><input name="complainant" value="${esc(c.complainant)}"></div><div><label>投訴人聯絡</label><input name="complainantContact" value="${esc(c.complainantContact)}"></div></div>
+      <div class="row"><div><label>被投訴方／對方</label><input name="respondent" value="${esc(c.respondent)}"></div><div><label>對方聯絡</label><input name="respondentContact" value="${esc(c.respondentContact)}"></div></div>
+      <div class="row"><div><label>相關承辦商</label><select name="contractorId"><option value="">—</option>${S.contractors.map((k) => `<option value="${k.id}" ${k.id === c.contractorId ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select></div><div><label>狀態</label><select name="status">${opt(STATUS, c.status)}</select></div></div>
+      <div class="row"><div><label>下一步</label><input name="nextAction" value="${esc(c.nextAction)}" placeholder="邊個、做咩"></div><div><label>下一步期限</label><input type="date" name="nextDue" value="${esc(c.nextDue)}"></div><div><label>應承咗幾時覆投訴人</label><input type="date" name="promisedReplyBy" value="${esc(c.promisedReplyBy)}"></div></div>
+      <div class="row"><label class="check"><input type="checkbox" name="safety" ${c.safety ? 'checked' : ''}> 涉及安全（走火通道、消防、結構）——即時處理</label><label class="check"><input type="checkbox" name="vulnerable" ${c.vulnerable ? 'checked' : ''}> 涉及弱勢住戶——要轉介支援</label></div>
+      <div class="row full"><div><label>備註</label><textarea name="notes">${esc(c.notes)}</textarea></div></div>
+      <div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+    $('#mCancel').onclick = closeModal;
+    $('#caseForm').onsubmit = (e) => {
+      e.preventDefault(); const d = formData(e.target);
+      Object.assign(c, d);
+      if (!existing) S.cases.push(c);
+      if (existing && d.status === 'closed' && !c.closedAt) c.closedAt = today();
+      save(); closeModal(); location.hash = '#/case/' + c.id; if (location.hash === '#/case/' + c.id) route(); toast('已儲存');
+    };
+  }
+
+  // ---------- 個案詳情 ----------
+  VIEWS.case = function (id) {
+    const c = caseById(id); if (!c) { $('#main').innerHTML = '<div class="empty">搵唔到個案</div>'; return; }
+    const t = today(); const ct = R.CASE_TYPES[c.type]; const pm = R.PREMISES[c.premises];
+    const routeInfo = findRoute(c.type, c.premises);
+    const k = c.contractorId ? contractorById(c.contractorId) : null;
+    let html = `<div class="card-head"><div><div class="muted small">${esc(c.ref)} · ${esc(ct.label)} · ${esc(pm.label)}</div><h1>${esc(c.title)}</h1></div>
+      <div class="btn-row no-print"><button class="btn" id="editCase">編輯</button><a class="btn" href="#/letters/${c.id}">出信</a><a class="btn" href="#/prep/${c.id}">準備對話</a><a class="btn" href="#/review/${c.id}">判斷</a>${isOpen(c) ? `<button class="btn" id="closeCase">結案</button>` : `<button class="btn" id="reopenCase">重開</button>`}<button class="btn danger ghost" id="delCase">刪除</button></div></div>`;
+    if (isSafety(c)) html += `<div class="banner danger"><strong>安全同法定事項冇酌情</strong>走火通道、消防設備、結構危險——即時處理、記錄、上報。唔好攞去做「值唔值得」嘅計算。</div>`;
+    if (c.vulnerable) html += `<div class="banner warn"><strong>涉及弱勢住戶</strong>除咗程序之外要轉介支援（房署社區服務隊、社工、長者支援）。目標係搞掂件事同轉介，唔係贏一場對話。</div>`;
+    if (isOpen(c) && !isSafety(c) && stalledDays(c) >= 60) html += `<div class="banner warn"><strong>已經 ${stalledDays(c)} 日冇實質進展</strong>再拖三個月會唔會變好？會（等緊報告／工程）→ 定死檢查點。唔會 → 而家決定升級定結案。<a href="#/review/${c.id}">去判斷</a></div>`;
+    if (c.promisedReplyBy && c.promisedReplyBy <= t && isOpen(c)) html += `<div class="banner warn"><strong>應承咗 ${fmtDate(c.promisedReplyBy)} 前覆投訴人</strong>就算未有結果都要覆。一次 miss 咗你講嘅死線，之後所有嘢都唔會信你。</div>`;
+
+    html += `<div class="grid cols-2"><div>`;
+    html += `<div class="card"><h3>基本資料</h3><dl class="kv">
+      <dt>位置</dt><dd>${esc(c.block)} ${esc(c.unit)}</dd>
+      <dt>投訴人</dt><dd>${esc(c.complainant) || '—'} ${c.complainantContact ? '· ' + esc(c.complainantContact) : ''}</dd>
+      <dt>對方</dt><dd>${esc(c.respondent) || '—'} ${c.respondentContact ? '· ' + esc(c.respondentContact) : ''}</dd>
+      ${k ? `<dt>承辦商</dt><dd><a href="#/contractors/${k.id}">${esc(k.name)}</a></dd>` : ''}
+      <dt>開立</dt><dd>${fmtDate(c.openedAt)}（${daysBetween(c.openedAt, t)} 日）</dd>
+      <dt>狀態</dt><dd><span class="tag accent">${STATUS[c.status]}</span> ${c.closedAt ? '結案 ' + fmtDate(c.closedAt) + '：' + esc(c.closedReason) : ''}</dd>
+      <dt>下一步</dt><dd>${esc(c.nextAction) || '—'} ${c.nextDue ? `<span class="tag ${c.nextDue < t ? 'danger' : c.nextDue === t ? 'warn' : ''}">${fmtDate(c.nextDue)}</span>` : ''}</dd>
+      <dt>應承覆</dt><dd>${c.promisedReplyBy ? fmtDate(c.promisedReplyBy) : '—'}</dd>
+      <dt>上門次數</dt><dd>${c.attempts || 0}${c.type === 'seepage' && (c.attempts || 0) >= 2 ? ' <span class="tag warn">兩至三次有紀錄後轉程序</span>' : ''}</dd>
+      </dl>${c.notes ? `<p class="small" style="margin-top:8px;white-space:pre-wrap">${esc(c.notes)}</p>` : ''}</div>`;
+
+    // 手段階梯
+    html += `<div class="card"><div class="card-head"><h3>手段階梯</h3><span class="muted small">冇試過上一層，唔好跳去下一層</span></div><div class="ladder">${R.LADDER.map((l) => `<div class="rung ${l.level === c.escalation ? 'current' : ''}" data-lvl="${l.level}"><div class="lvl">${l.level}</div><div><strong>${l.name}</strong> <span class="muted small">${l.classic} · 代價${l.cost}</span><div class="small">${l.desc}</div></div></div>`).join('')}</div>
+      <div class="btn-row no-print" style="margin-top:8px">${c.escalation < 3 ? `<button class="btn small" id="escUp">升一級 →</button>` : ''}${c.escalation > 0 ? `<button class="btn small ghost" id="escDown">← 降一級</button>` : ''}</div></div>`;
+
+    // 滲水專區
+    if (c.type === 'seepage') html += seepagePanel(c);
+
+    html += `</div><div>`;
+    // 法規
+    if (routeInfo) html += `<div class="card"><div class="card-head"><h3>歸邊度</h3><a href="#/router" class="small">詳細</a></div><dl class="kv"><dt>條例</dt><dd>${esc(routeInfo.ordinance)}</dd><dt>部門</dt><dd>${esc(routeInfo.dept)}</dd><dt>你嘅角色</dt><dd>${esc(routeInfo.role)}</dd></dl><p class="small muted" style="margin-top:8px">要核實：${routeInfo.verify.map(esc).join('；')}</p></div>`;
+    // 目標／底線
+    html += `<div class="card"><div class="card-head"><h3>目標 / 底線 / 傾唔掂點算</h3><button class="btn small no-print" id="editPrep">編輯</button></div><dl class="kv">
+      <dt>目標</dt><dd>${esc(c.prep.goal) || '<span class="muted">未定——要具體到邊個、做咩、幾時</span>'}</dd>
+      <dt>底線</dt><dd>${esc(c.prep.bottom) || '<span class="muted">低過呢條就轉程序</span>'}</dd>
+      <dt>我嘅 BATNA</dt><dd>${esc(c.prep.batna) || '<span class="muted">傾唔掂我下一步係咩？答唔到就唔應該開始傾</span>'}</dd>
+      <dt>對方 BATNA</dt><dd>${esc(c.prep.theirBatna) || '<span class="muted">佢傾唔掂會點？</span>'}</dd>
+      <dt>對方利益</dt><dd>${esc(c.prep.interest) || '<span class="muted">立場係佢話要咩；利益係佢點解要</span>'}</dd></dl></div>`;
+    html += `</div></div>`;
+
+    // 紀錄
+    html += `<div class="card"><div class="card-head"><h3>接觸紀錄（${c.log.length}）</h3><button class="btn primary small no-print" id="addLog">記一筆</button></div>
+      <p class="small muted">每次接觸都要記：日期時間、渠道、邊個、對方原話、結果、下一步。記事實，唔記情緒——「對方表示不滿並要求即時處理」，唔係「對方情緒激動」。</p>
+      ${c.log.length ? `<ul class="timeline">${c.log.slice().reverse().map((l, i) => `<li><div class="when">${esc(l.at)} · ${esc(l.channel)} · ${esc(l.party)}</div><div class="what">${l.said ? '對方：' + esc(l.said) + '\n' : ''}${l.outcome ? '結果：' + esc(l.outcome) : ''}${l.next ? '\n下一步：' + esc(l.next) : ''}</div><button class="btn small ghost no-print" data-dellog="${c.log.length - 1 - i}">刪</button></li>`).join('')}</ul>` : '<div class="empty">未有紀錄</div>'}</div>`;
+
+    // 信件
+    const letters = S.letters.filter((l) => l.caseId === c.id);
+    if (letters.length) html += `<div class="card"><h3>已出信件（${letters.length}）</h3><div class="list">${letters.slice().reverse().map((l) => `<div class="item" data-href="#/letters/${c.id}/${l.id}"><div class="body"><div class="title">${esc(R.LETTER_KINDS[l.kind].label)}</div><div class="meta"><span>${esc(l.createdAt)}</span></div></div></div>`).join('')}</div></div>`;
+
+    $('#main').innerHTML = html;
+    $('#editCase').onclick = () => caseForm(c);
+    const cc = $('#closeCase'); if (cc) cc.onclick = () => closeCaseDialog(c);
+    const rc = $('#reopenCase'); if (rc) rc.onclick = () => { c.status = 'open'; c.closedAt = ''; c.lastProgressAt = today(); save(); route(); };
+    $('#delCase').onclick = () => confirmDialog(`刪除 ${c.ref}？呢個動作唔可以復原。`, () => { S.cases = S.cases.filter((x) => x.id !== c.id); S.letters = S.letters.filter((l) => l.caseId !== c.id); save(); location.hash = '#/cases'; });
+    const up = $('#escUp'); if (up) up.onclick = () => escalateDialog(c);
+    const dn = $('#escDown'); if (dn) dn.onclick = () => { c.escalation--; save(); route(); };
+    $('#editPrep').onclick = () => prepForm(c);
+    $('#addLog').onclick = () => logForm(c);
+    $$('[data-dellog]').forEach((b) => b.onclick = () => confirmDialog('刪除呢筆紀錄？', () => { c.log.splice(Number(b.dataset.dellog), 1); save(); route(); }));
+    bindItems();
+    bindSeepage(c);
+  };
+
+  function findRoute(type, premises) { return R.ROUTES.find((r) => r.type === type && r.premises === premises) || R.ROUTES.find((r) => r.type === type && r.premises === null) || null; }
+
+  function seepagePanel(c) {
+    const sp = c.seepage || {}; const t = today();
+    const isNew = c.premises === 'private' && c.openedAt >= R.SEEPAGE_NEW_PROCEDURE_DATE;
+    let html = `<div class="card"><div class="card-head"><h3>滲水專區</h3><span class="tag ${isNew ? 'accent' : 'warn'}">${c.premises !== 'private' ? '非私人樓宇——唔行聯辦處' : isNew ? '2026/7/16 起新程序' : '舊程序（開立日期早過 2026/7/16）'}</span></div>`;
+    if (c.premises === 'private') {
+      html += `<div class="row"><div><label>濕度讀數（%）</label><input id="spMoist" value="${esc(sp.moisture)}" placeholder="35 以下聯辦處唔會調查"></div><div><label>聯辦處收到舉報日期</label><input type="date" id="spComplaint" value="${esc(sp.complaintAt)}"></div><div><label>建議維修通知發出日期</label><input type="date" id="spNotice" value="${esc(sp.noticeAt)}"></div></div>`;
+      const rows = [];
+      if (sp.moisture !== '' && Number(sp.moisture) < 35) rows.push(['濕度低於 35%', '聯辦處一般唔會調查或會暫停跟進——先靠本處協調']);
+      if (sp.complaintAt) rows.push(['聯辦處聯絡舉報人（6 個工作天）', `約 ${fmtDate(addWorkingDays(sp.complaintAt, 6))} 前`]);
+      if (sp.complaintAt && isNew) rows.push(['簡單個案發通知（約 14 個工作天）', `約 ${fmtDate(addWorkingDays(sp.complaintAt, 14))} 前`]);
+      if (sp.noticeAt && isNew) { const dl = addDays(sp.noticeAt, 28); rows.push(['28 個曆日維修期屆滿', `${fmtDate(dl)}${dl < t ? ' <span class="tag danger">已過——滲水持續就入第二、三階段</span>' : `（尚餘 ${daysBetween(t, dl)} 日）`}`]); }
+      if (rows.length) html += `<dl class="kv">${rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
+      html += `<p class="small muted" style="margin-top:8px">工作天計算只跳過星期六日，未扣公眾假期。所有時限用之前向 waterseepage.gov.hk 核實。${isNew ? '' : '<strong>舊個案唔好用新程序嘅時限去答住戶。</strong>'}</p>`;
+    } else {
+      html += `<p class="small">${esc(R.PREMISES[c.premises].seepage)}</p>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+  function bindSeepage(c) {
+    const m = $('#spMoist'); if (!m) return;
+    const upd = () => { c.seepage = { moisture: $('#spMoist').value.trim(), complaintAt: $('#spComplaint').value, noticeAt: $('#spNotice').value }; save(); route(); };
+    ['#spMoist', '#spComplaint', '#spNotice'].forEach((s) => { $(s).onchange = upd; });
+  }
+
+  function logForm(c) {
+    openModal(`<h2>記一筆接觸</h2><form id="logForm">
+      <div class="row"><div><label>日期時間</label><input name="at" value="${nowStamp()}"></div><div><label>渠道</label><select name="channel">${CHANNELS.map((x) => `<option>${x}</option>`).join('')}</select></div><div><label>對方係邊個</label><input name="party" value="${esc(c.respondent || c.complainant)}"></div></div>
+      <div class="row full"><div><label>對方原話（記事實，唔記情緒）</label><textarea name="said" placeholder="「唔關我事，你哋自己搞掂佢啦。」"></textarea></div></div>
+      <div class="row full"><div><label>結果</label><input name="outcome" placeholder="有應門但冇入到；答應考慮星期四"></div></div>
+      <div class="row"><div><label>下一步</label><input name="next" value="${esc(c.nextAction)}"></div><div><label>下一步期限</label><input type="date" name="nextDue" value="${esc(c.nextDue)}"></div><div><label>應承幾時覆投訴人</label><input type="date" name="promisedReplyBy" value="${esc(c.promisedReplyBy)}"></div></div>
+      <div class="row"><label class="check"><input type="checkbox" name="attempt" ${c.type === 'seepage' ? 'checked' : ''}> 呢次係上門嘗試（計入次數）</label><label class="check"><input type="checkbox" name="progress" checked> 算係實質進展</label></div>
+      <div class="help">傾到大家舒服但冇結論，等於冇傾過。收尾要定死：邊個、做咩、幾時、點覆。口頭傾成嘅嘢，即日出紀錄信。</div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+    $('#mCancel').onclick = closeModal;
+    $('#logForm').onsubmit = (e) => {
+      e.preventDefault(); const d = formData(e.target);
+      c.log.push({ at: d.at, channel: d.channel, party: d.party, said: d.said, outcome: d.outcome, next: d.next });
+      c.nextAction = d.next; c.nextDue = d.nextDue; c.promisedReplyBy = d.promisedReplyBy;
+      if (d.attempt && d.channel === '上門') c.attempts = (c.attempts || 0) + 1;
+      if (d.progress) c.lastProgressAt = today();
+      save(); closeModal(); route(); toast('已記錄。記得即日出紀錄信。');
+    };
+  }
+  function prepForm(c) {
+    const p = c.prep;
+    openModal(`<h2>目標 / 底線 / BATNA</h2><form id="prepForm">
+      <div class="row full"><div><label>目標（具體到邊個、做咩、幾時）</label><input name="goal" value="${esc(p.goal)}"></div></div>
+      <div class="row full"><div><label>底線（低過呢條就唔好傾落去，轉程序）</label><input name="bottom" value="${esc(p.bottom)}"></div></div>
+      <div class="row full"><div><label>我傾唔掂會點（BATNA）</label><input name="batna" value="${esc(p.batna)}"><div class="help">你知道自己傾唔掂之後有咩做，你就唔會慌；你唔慌，對方就迫你唔到。</div></div></div>
+      <div class="row full"><div><label>對方傾唔掂會點</label><input name="theirBatna" value="${esc(p.theirBatna)}"><div class="help">如果佢嘅最差情況根本唔差，佢就冇動力。</div></div></div>
+      <div class="row full"><div><label>對方真正嘅利益（唔係佢講嗰樣）</label><input name="interest" value="${esc(p.interest)}"><div class="help">驚僭建被查？驚認咗要賠？屋企有老人？憎上次嗰個職員？唔知之前，任何方案都係亂估。</div></div></div>
+      <div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+    $('#mCancel').onclick = closeModal;
+    $('#prepForm').onsubmit = (e) => { e.preventDefault(); Object.assign(c.prep, formData(e.target)); save(); closeModal(); route(); };
+  }
+  function escalateDialog(c) {
+    const next = R.LADDER[c.escalation + 1];
+    const losses = Object.values(c.seven || {}).filter((v) => v === 'them').length;
+    openModal(`<h2>升級到「${next.name}」？</h2>
+      <p class="small">${esc(next.desc)}</p>
+      ${losses >= 3 ? `<div class="banner danger"><strong>七計對比你輸咗 ${losses} 項</strong>輸三條或以上，唔好行強硬路線。先去「形勢判斷」睇返。</div>` : ''}
+      ${c.escalation === 0 && c.log.length < 2 ? `<div class="banner warn"><strong>紀錄上得 ${c.log.length} 次接觸</strong>紀錄上見到你跳步，對方可以話你冇畀機會佢改善。</div>` : ''}
+      ${next.level >= 2 ? `<div class="card flat"><h4>嬲住唔好開戰——出信之前答三條</h4>${R.ANGER_CHECK.map((q, i) => `<label class="check"><input type="checkbox" class="angerQ" data-i="${i}"> ${esc(q)}</label>`).join('')}<div class="help">有一條答「係」，擺埋聽日。怒可以復喜，但你嬲住做落嘅決定唔會自己消失。</div></div>` : ''}
+      <div class="row full"><div><label>點解升級（寫入紀錄）</label><input id="escWhy" placeholder="兩次上門有紀錄，對方明確拒絕；樓下滲水持續"></div></div>
+      <div class="btn-row"><button class="btn primary" id="escOk">確定升級</button><button class="btn" id="mCancel">取消</button></div>`);
+    $('#mCancel').onclick = closeModal;
+    $('#escOk').onclick = () => {
+      const why = $('#escWhy').value.trim();
+      const apply = () => {
+        c.escalation++; c.lastProgressAt = today(); if (c.status === 'open' && c.escalation >= 2) c.status = 'escalated';
+        c.log.push({ at: nowStamp(), channel: '書面', party: '本處', said: '', outcome: `升級至「${next.name}」：${why}`, next: '' });
+        save(); closeModal(); route();
+      };
+      const angry = $$('.angerQ').some((x) => x.checked);
+      if (angry) confirmDialog('你剔咗「嬲住」嘅選項。真係要今日升級？建議隔一晚。', apply); else apply();
+    };
+  }
+  function closeCaseDialog(c) {
+    openModal(`<h2>結案 ${esc(c.ref)}</h2><p class="small">「結案」唔等於唔記錄。決定唔推，都要書面記低點解唔推、幾時再睇。否則三年後有人問起，你企唔住。</p>
+      <form id="closeForm"><div class="row full"><div><label>結案原因</label><textarea name="closedReason" required placeholder="已修復；／投訴人確認冇再滲；／決定唔再推：對方唔郁而本處冇新籌碼，三個月後（日期）再睇"></textarea></div></div>
+      <div class="btn-row"><button class="btn primary" type="submit">結案</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+    $('#mCancel').onclick = closeModal;
+    $('#closeForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); c.status = 'closed'; c.closedAt = today(); c.closedReason = d.closedReason; c.nextDue = ''; c.promisedReplyBy = ''; save(); closeModal(); route(); };
+  }
+
+  // ---------- 巡查 ----------
+  VIEWS.inspections = function () {
+    const list = S.inspections.slice().sort((a, b) => (a.at < b.at ? 1 : -1));
+    $('#main').innerHTML = `<div class="card-head"><h1>巡查紀錄</h1><button class="btn primary" id="addInsp">記錄巡查</button></div>
+      <p class="muted small">見到苗頭就先處理，唔好等住戶投訴先反應。有問題嘅發現可以一鍵開個案。</p>
+      ${list.length ? `<div class="table-wrap"><table><thead><tr><th>日期</th><th>座</th><th>範圍</th><th>發現</th><th>安全</th><th>個案</th><th></th></tr></thead><tbody>${list.map((i) => `<tr><td>${fmtDate(i.at)}</td><td>${esc(i.block)}</td><td>${esc(i.area)}</td><td>${esc(i.findings)}</td><td>${i.safety ? '<span class="tag danger">安全</span>' : ''}</td><td>${i.caseId ? `<a href="#/case/${i.caseId}">${esc((caseById(i.caseId) || {}).ref || '')}</a>` : (i.findings && i.findings !== '無異常' ? `<button class="btn small" data-mkcase="${i.id}">開個案</button>` : '')}</td><td><button class="btn small ghost" data-delinsp="${i.id}">刪</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">未有巡查紀錄</div>'}`;
+    $('#addInsp').onclick = () => {
+      openModal(`<h2>記錄巡查</h2><form id="inspForm">
+      <div class="row"><div><label>日期</label><input type="date" name="at" value="${today()}"></div><div><label>座</label><input name="block"></div><div><label>範圍</label><input name="area" placeholder="地下大堂、天台、樓梯"></div></div>
+      <div class="row full"><div><label>發現</label><textarea name="findings" placeholder="無異常／或者具體寫：3樓樓梯有單車阻塞走火通道"></textarea></div></div>
+      <div class="row"><label class="check"><input type="checkbox" name="safety"> 涉及安全（走火通道、消防、結構）</label></div>
+      <div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+      $('#mCancel').onclick = closeModal;
+      $('#inspForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); S.inspections.push({ id: uid(), at: d.at, block: d.block, area: d.area, findings: d.findings || '無異常', safety: d.safety, caseId: '' }); save(); closeModal(); route(); };
+    };
+    $$('[data-mkcase]').forEach((b) => b.onclick = () => { const i = S.inspections.find((x) => x.id === b.dataset.mkcase); const c = newCase({ title: `${i.block} ${i.area}：${i.findings}`.slice(0, 60), type: i.safety ? 'escape' : 'other', block: i.block, unit: i.area, safety: i.safety, complainant: '巡查', nextAction: i.safety ? '即時處理' : '', nextDue: i.safety ? today() : '', log: [{ at: i.at + ' 巡查', channel: '巡查', party: '—', said: '', outcome: i.findings, next: '' }] }); S.cases.push(c); i.caseId = c.id; save(); location.hash = '#/case/' + c.id; });
+    $$('[data-delinsp]').forEach((b) => b.onclick = () => confirmDialog('刪除呢筆巡查紀錄？', () => { S.inspections = S.inspections.filter((x) => x.id !== b.dataset.delinsp); save(); route(); }));
+  };
+
+  // ---------- 承辦商 ----------
+  VIEWS.contractors = function (id) {
+    if (id) return contractorDetail(id);
+    const t = today();
+    $('#main').innerHTML = `<div class="card-head"><h1>承辦商</h1><button class="btn primary" id="addCon">新承辦商</button></div>
+      <p class="muted small">合約 SLA 係客觀標準——「我哋一齊睇下份合約點寫」。超時次數係你出紀錄信、警告信嘅事實基礎。</p>
+      ${S.contractors.length ? `<div class="list">${S.contractors.map((k) => { const open = k.orders.filter((o) => o.status !== 'done'); const late = open.filter((o) => o.dueAt && o.dueAt < t).length; const lateEver = k.orders.filter((o) => o.dueAt && ((o.doneAt && o.doneAt > o.dueAt) || (!o.doneAt && o.dueAt < t))).length; return `<div class="item ${late ? 'overdue' : ''}" data-href="#/contractors/${k.id}"><div class="body"><div class="title">${esc(k.name)}</div><div class="meta"><span>${esc(k.contract)}</span><span>SLA ${k.slaDays} 日</span><span>未完成 ${open.length}</span>${late ? `<span class="tag danger">超時 ${late}</span>` : ''}<span>累計超時 ${lateEver}／${k.orders.length}</span></div></div></div>`; }).join('')}</div>` : '<div class="empty">未有承辦商</div>'}`;
+    $('#addCon').onclick = () => contractorForm();
+    bindItems();
+  };
+  function contractorForm(existing) {
+    const k = existing || { id: uid(), name: '', contact: '', phone: '', contract: '', slaDays: 3, notes: '', orders: [] };
+    openModal(`<h2>${existing ? '編輯' : '新'}承辦商</h2><form id="conForm">
+      <div class="row full"><div><label>公司名稱</label><input name="name" value="${esc(k.name)}" required></div></div>
+      <div class="row"><div><label>聯絡人</label><input name="contact" value="${esc(k.contact)}"></div><div><label>電話</label><input name="phone" value="${esc(k.phone)}"></div></div>
+      <div class="row"><div><label>合約</label><input name="contract" value="${esc(k.contract)}"></div><div><label>SLA 到場／完成日數</label><input type="number" name="slaDays" value="${k.slaDays}" min="0"></div></div>
+      <div class="row full"><div><label>備註（條款、罰則）</label><textarea name="notes">${esc(k.notes)}</textarea></div></div>
+      <div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+    $('#mCancel').onclick = closeModal;
+    $('#conForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); d.slaDays = Number(d.slaDays) || 0; Object.assign(k, d); if (!existing) S.contractors.push(k); save(); closeModal(); location.hash = '#/contractors/' + k.id; route(); };
+  }
+  function contractorDetail(id) {
+    const k = contractorById(id); if (!k) { $('#main').innerHTML = '<div class="empty">搵唔到</div>'; return; }
+    const t = today();
+    const orders = k.orders.slice().sort((a, b) => (a.issuedAt < b.issuedAt ? 1 : -1));
+    const late = k.orders.filter((o) => o.dueAt && ((o.doneAt && o.doneAt > o.dueAt) || (!o.doneAt && o.dueAt < t)));
+    const cases = S.cases.filter((c) => c.contractorId === k.id);
+    $('#main').innerHTML = `<div class="card-head"><div><div class="muted small">承辦商</div><h1>${esc(k.name)}</h1></div><div class="btn-row"><button class="btn" id="editCon">編輯</button><button class="btn" id="mkCase">開承辦商個案</button><button class="btn danger ghost" id="delCon">刪除</button></div></div>
+      <div class="grid cols-2"><div class="card"><h3>資料</h3><dl class="kv"><dt>聯絡</dt><dd>${esc(k.contact)} ${esc(k.phone)}</dd><dt>合約</dt><dd>${esc(k.contract)}</dd><dt>SLA</dt><dd>${k.slaDays} 日</dd></dl>${k.notes ? `<p class="small" style="white-space:pre-wrap;margin-top:8px">${esc(k.notes)}</p>` : ''}</div>
+      <div class="card"><h3>事實摘要（可以直接放入信）</h3><p class="small">${late.length ? `合約訂明 ${k.slaDays} 日內完成。以下 ${late.length} 宗工單超出限期：<br>${late.map((o) => `・${fmtDate(o.issuedAt)} 發出「${esc(o.desc)}」，限期 ${fmtDate(o.dueAt)}，${o.doneAt ? `於 ${fmtDate(o.doneAt)} 完成（遲 ${daysBetween(o.dueAt, o.doneAt)} 日）` : `至今未完成（已超 ${daysBetween(o.dueAt, t)} 日）`}`).join('<br>')}` : '暫時冇超時工單。'}</p><p class="tiny muted">呢段係事實，冇形容詞。「你哋成日走數」係推論；「三單入面兩單超時」係事實。</p></div></div>
+      <div class="card"><div class="card-head"><h3>工單（${k.orders.length}）</h3><button class="btn primary small" id="addWo">新工單</button></div>
+      ${orders.length ? `<div class="table-wrap"><table><thead><tr><th>發出</th><th>內容</th><th>限期</th><th>完成</th><th>狀態</th><th></th></tr></thead><tbody>${orders.map((o) => { const isLate = o.dueAt && ((o.doneAt && o.doneAt > o.dueAt) || (!o.doneAt && o.dueAt < t)); return `<tr><td>${fmtDate(o.issuedAt)}</td><td>${esc(o.desc)}</td><td>${fmtDate(o.dueAt)}</td><td>${fmtDate(o.doneAt)}</td><td>${o.status === 'done' ? `<span class="tag ${isLate ? 'warn' : 'ok'}">${isLate ? '遲完成' : '完成'}</span>` : isLate ? '<span class="tag danger">超時</span>' : '<span class="tag accent">進行中</span>'}</td><td class="btn-row">${o.status !== 'done' ? `<button class="btn small" data-done="${o.id}">完成</button>` : ''}<button class="btn small ghost" data-delwo="${o.id}">刪</button></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">未有工單</div>'}</div>
+      ${cases.length ? `<div class="card"><h3>相關個案</h3><div class="list">${cases.map(caseItem).join('')}</div></div>` : ''}`;
+    $('#editCon').onclick = () => contractorForm(k);
+    $('#delCon').onclick = () => confirmDialog('刪除呢個承辦商同全部工單？', () => { S.contractors = S.contractors.filter((x) => x.id !== k.id); save(); location.hash = '#/contractors'; });
+    $('#mkCase').onclick = () => caseForm(null, { title: `${k.name}：工單超時`, type: 'contractor', respondent: k.name, respondentContact: k.phone, contractorId: k.id, complainant: '本處' });
+    $('#addWo').onclick = () => {
+      openModal(`<h2>新工單</h2><form id="woForm"><div class="row full"><div><label>內容</label><input name="desc" required></div></div><div class="row"><div><label>發出日期</label><input type="date" name="issuedAt" value="${today()}" id="woIssued"></div><div><label>限期</label><input type="date" name="dueAt" value="${addDays(today(), k.slaDays)}" id="woDue"></div></div><div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+      $('#mCancel').onclick = closeModal;
+      $('#woIssued').onchange = (e) => { $('#woDue').value = addDays(e.target.value, k.slaDays); };
+      $('#woForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); k.orders.push({ id: uid(), desc: d.desc, issuedAt: d.issuedAt, dueAt: d.dueAt, doneAt: '', status: 'open' }); save(); closeModal(); route(); };
+    };
+    $$('[data-done]').forEach((b) => b.onclick = () => { const o = k.orders.find((x) => x.id === b.dataset.done); o.status = 'done'; o.doneAt = today(); save(); route(); });
+    $$('[data-delwo]').forEach((b) => b.onclick = () => { k.orders = k.orders.filter((x) => x.id !== b.dataset.delwo); save(); route(); });
+    bindItems();
+  }
+
+  // ---------- 法規導航 ----------
+  let routerSel = { type: 'seepage', premises: '' };
+  VIEWS.router = function () {
+    const r = routerSel.premises ? findRoute(routerSel.type, routerSel.premises) : null;
+    $('#main').innerHTML = `<h1>法規導航</h1><p class="muted small">呢度係導航，唔係權威。條例、程序同時限會改。任何具體數字、時限、費用、表格，行動之前一定要向原始來源核實。唔係法律意見——涉及檢控、租約終止、索償、紀律程序，要問法律部門或上級。</p>
+      <div class="card"><h3>第一個問題：呢個處所屬邊種？</h3><p class="small">呢條問題決定晒之後所有嘢，而且係最易搞錯嗰條。未答到之前，唔好講任何條例。同一條邨可以同時有幾種。</p>
+      <div class="row"><div><label>處所類型</label><select id="rPrem"><option value="">— 未確定（先問清楚，唔好估）—</option>${opt(R.PREMISES, routerSel.premises)}</select></div><div><label>個案類型</label><select id="rType">${opt(R.CASE_TYPES, routerSel.type)}</select></div></div>
+      ${routerSel.premises ? `<p class="small"><strong>${esc(R.PREMISES[routerSel.premises].label)}</strong>：${esc(R.PREMISES[routerSel.premises].regime)}</p>` : ''}</div>
+      ${r ? `<div class="grid cols-2"><div class="card"><h3>歸邊條例／邊個部門</h3><dl class="kv"><dt>條例</dt><dd>${esc(r.ordinance)}</dd><dt>部門</dt><dd>${esc(r.dept)}</dd></dl><h4 style="margin-top:12px">你有咩權限、冇咩權限</h4><p class="small">${esc(r.role)}</p>${r.related.length ? `<h4>相關轉介</h4><ul class="small">${r.related.map((x) => `<li>${esc(x.when)} → ${esc(x.ordinance)}，${esc(x.dept)}</li>`).join('')}</ul>` : ''}</div>
+      <div class="card"><h3>程序形狀同時限</h3><ol class="small">${r.procedure.map((p) => `<li>${esc(p)}</li>`).join('')}</ol><div class="banner warn" style="margin-top:8px"><strong>要核實</strong><ul class="warnlist small">${r.verify.map((v) => `<li>${esc(v)}</li>`).join('')}</ul></div></div></div>` : '<div class="empty">揀咗處所類型先有答案</div>'}
+      <div class="grid cols-2"><div class="card"><h3>個案 → 歸邊度（總表）</h3><div class="table-wrap"><table><thead><tr><th>個案</th><th>主要條例</th><th>部門</th></tr></thead><tbody>${R.ROUTES.filter((x) => x.premises === null || x.premises === 'private').map((x) => `<tr><td>${esc(R.CASE_TYPES[x.type].label)}${x.premises ? '（私人）' : ''}</td><td class="small">${esc(x.ordinance)}</td><td class="small">${esc(x.dept)}</td></tr>`).join('')}</tbody></table></div></div>
+      <div><div class="card"><h3>你自己嘅牌照責任（第626章）</h3><p class="small">${esc(R.LICENCE_NOTE)}</p>${S.settings.licenceNo ? `<p class="small">你嘅牌照號碼：<strong>${esc(S.settings.licenceNo)}</strong>（信件會自動加）</p>` : '<p class="small muted">未喺設定填牌照號碼。</p>'}</div>
+      <div class="card"><h3>查證來源</h3><ul class="small">${R.SOURCES.map((s) => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a> — ${esc(s.note)}</li>`).join('')}</ul><p class="tiny muted">房委會租住單位嘅事以房署內部通函、租約條款同屋邨管理指引為準。呢個系統唔覆蓋內部程序。</p></div></div></div>`;
+    $('#rPrem').onchange = (e) => { routerSel.premises = e.target.value; VIEWS.router(); };
+    $('#rType').onchange = (e) => { routerSel.type = e.target.value; VIEWS.router(); };
+  };
+
+  // ---------- 信件草擬 ----------
+  VIEWS.letters = function (arg) {
+    const caseId = arg || ''; const letterId = location.hash.split('/')[3] || '';
+    const c = caseId ? caseById(caseId) : null;
+    const existing = letterId ? S.letters.find((l) => l.id === letterId) : null;
+    const st = S.settings;
+    let kind = existing ? existing.kind : (c ? suggestLetterKind(c) : 'reply');
+    let useExisting = !!existing;
+    const render = () => {
+      const K = R.LETTER_KINDS[kind];
+      const gate = c && kind === 'warning' ? warningGate(c) : '';
+      $('#main').innerHTML = `<div class="card-head no-print"><h1>信件草擬${c ? ` · ${esc(c.ref)}` : ''}</h1><div class="btn-row"><select id="lCase" style="width:auto"><option value="">— 唔連結個案 —</option>${S.cases.filter(isOpen).map((x) => `<option value="${x.id}" ${c && x.id === c.id ? 'selected' : ''}>${esc(x.ref)} ${esc(x.title)}</option>`).join('')}</select></div></div>
+        <div class="tabs no-print">${Object.entries(R.LETTER_KINDS).map(([k, v]) => `<button class="${k === kind ? 'active' : ''}" data-kind="${k}">${v.label}</button>`).join('')}</div>
+        <div class="grid cols-2 no-print"><div class="card flat"><h4>呢封信要攞咩</h4><p class="small">${esc(K.purpose)}</p><h4>次序（最常見嘅錯係由第三段開始寫）</h4><ol class="small">${K.order.map((o) => `<li>${esc(o)}</li>`).join('')}</ol></div>
+        <div class="card flat"><h4>先諗清楚</h4><p class="small">要對方配合 → 軟、短，重點喺對方嘅好處同下一步，唔好列條款。<br>要紀錄／留底 → 硬、具體，日期時間齊，列條款。<br><strong>兩樣都要 → 分兩封。</strong>一封又想合作又想留底，通常兩樣都做唔到。</p>${!st.licenceNo && !st.officerName ? '<p class="small muted">去「設定」填姓名同牌照號碼，信尾會自動加。</p>' : ''}</div></div>
+        ${gate}
+        <div class="card"><div class="card-head no-print"><h3>草稿</h3><div class="btn-row"><button class="btn small" id="lGen">用範本重新生成</button><button class="btn small" id="lCopy">複製</button><button class="btn small" id="lPrint">列印</button><button class="btn primary small" id="lSave">儲存到個案</button></div></div>
+        <textarea class="letter" id="lBody"></textarea><div class="print-letter" id="lPrintBody" style="display:none"></div>
+        <div id="lWarn" style="margin-top:10px"></div></div>`;
+      const gen = () => { const ctx = letterContext(c, kind); $('#lBody').value = useExisting && existing.kind === kind ? existing.body : R.LETTER_TEMPLATES[kind](ctx); scan(); };
+      const scan = () => {
+        const txt = $('#lBody').value; const hits = [];
+        R.BANNED.forEach((b) => { const m = txt.match(b.re); if (m) hits.push({ words: Array.from(new Set(m)), why: b.why }); });
+        const placeholders = (txt.match(/［[^］]*］/g) || []).length;
+        const noDate = !/\d+月\d+日|\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(txt.replace(/\n[^\n]*$/, ''));
+        let w = '';
+        if (hits.length) w += `<div class="banner warn"><strong>書面唔應該出現嘅字眼</strong><ul class="warnlist small">${hits.map((h) => `<li><mark>${h.words.map(esc).join('、')}</mark> — ${esc(h.why)}</li>`).join('')}</ul></div>`;
+        if (placeholders) w += `<div class="banner info small">仲有 ${placeholders} 個［方括號］未填。</div>`;
+        if (noDate && kind !== 'notice') w += `<div class="banner info small">內文冇具體日期。「盡快」、「稍後」等於冇講——寫得出嘅日期先寫，寫咗就要做到。</div>`;
+        if (st.licenceNo && !txt.includes(st.licenceNo)) w += `<div class="banner info small">信上冇你嘅牌照號碼（第626章牌照條件）。</div>`;
+        if (!w) w = '<div class="banner ok small">掃描冇發現問題。出之前再讀一次：每一句係事實定推論？</div>';
+        $('#lWarn').innerHTML = w;
+      };
+      $$('[data-kind]').forEach((b) => b.onclick = () => { kind = b.dataset.kind; render(); });
+      $('#lCase').onchange = (e) => { location.hash = e.target.value ? '#/letters/' + e.target.value : '#/letters'; };
+      $('#lBody').oninput = scan;
+      $('#lGen').onclick = () => { useExisting = false; gen(); };
+      $('#lCopy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('#lBody').value).then(() => toast('已複製'), () => { $('#lBody').select(); document.execCommand('copy'); toast('已複製'); }); };
+      $('#lPrint').onclick = () => { $('#lPrintBody').textContent = $('#lBody').value; $('#lPrintBody').style.display = 'block'; $('#lBody').style.display = 'none'; window.print(); $('#lPrintBody').style.display = 'none'; $('#lBody').style.display = ''; };
+      $('#lSave').onclick = () => { if (!c) return toast('先連結一個個案'); const body = $('#lBody').value; if (existing) { existing.body = body; existing.kind = kind; } else S.letters.push({ id: uid(), caseId: c.id, kind, createdAt: nowStamp(), body }); c.lastProgressAt = today(); c.log.push({ at: nowStamp(), channel: '書面', party: c.respondent || c.complainant, said: '', outcome: `出咗${R.LETTER_KINDS[kind].label}`, next: c.nextAction }); save(); toast('已儲存到個案'); location.hash = '#/case/' + c.id; };
+      gen();
+    };
+    render();
+  };
+  function suggestLetterKind(c) { if (c.type === 'contractor') return c.escalation >= 2 ? 'warning' : 'record'; if (c.type === 'fee') return 'refuse'; if (c.type === 'seepage' && (c.attempts || 0) > 0) return 'access'; return 'reply'; }
+  function warningGate(c) {
+    const hasRecord = S.letters.some((l) => l.caseId === c.id && l.kind === 'record') || c.log.some((l) => /紀錄信/.test(l.outcome || ''));
+    const hasOral = c.log.some((l) => ['上門', '電話', '會議', '櫃檯'].includes(l.channel));
+    const probs = [];
+    if (!hasOral) probs.push('紀錄上未有口頭接觸');
+    if (!hasRecord) probs.push('未出過紀錄信');
+    if (c.escalation < 2) probs.push(`階梯仍然喺第 ${c.escalation} 級`);
+    if (!probs.length) return '<div class="banner ok small no-print">口頭 → 紀錄信 → 死線 → 警告信：次序上企得穩。</div>';
+    return `<div class="banner warn no-print"><strong>出警告信之前：我要改善，定係要紀錄？</strong>${probs.map(esc).join('；')}。跳步之後行合約行動嗰陣，紀錄會見到你由零直接跳去警告，對方可以話你冇畀機會佢改善。要改善就唔好即刻出信；要紀錄就出，而且唔好扮軟。</div>`;
+  }
+  function letterContext(c, kind) {
+    const st = S.settings; const t = today();
+    const base = { date: cnDate(t), officer: st.officerName, licence: st.licenceNo, phone: st.phone, estate: st.estate };
+    if (!c) return base;
+    const k = c.contractorId ? contractorById(c.contractorId) : null;
+    const lastTalk = c.log.slice().reverse().find((l) => ['上門', '電話', '會議', '櫃檯'].includes(l.channel));
+    const done = c.log.filter((l) => l.channel === '上門' || l.channel === '書面').map((l) => `於${cnDate(l.at.slice(0, 10))}${l.channel === '上門' ? '上門' : '以書面'}${l.outcome ? '（' + l.outcome + '）' : ''}`).join('、');
+    const ctx = Object.assign({}, base, { unit: [c.block, c.unit].filter(Boolean).join(' '), nextDate: c.nextDue ? cnDate(c.nextDue) : '', replyDate: c.promisedReplyBy ? cnDate(c.promisedReplyBy) : '', done });
+    if (kind === 'reply') { ctx.recipient = c.complainant; ctx.receivedDate = cnDate(c.openedAt); }
+    else if (kind === 'access') { ctx.recipient = c.respondent; ctx.purpose = `${ctx.unit}的${R.CASE_TYPES[c.type].label}情況`; }
+    else if (kind === 'record') { ctx.recipient = k ? k.name : c.respondent; ctx.talkDate = lastTalk ? cnDate(lastTalk.at.slice(0, 10)) : ''; ctx.channel = lastTalk ? lastTalk.channel : ''; ctx.agreed = lastTalk && lastTalk.outcome ? lastTalk.outcome + (c.nextDue ? `（限期：${cnDate(c.nextDue)}）` : '') : ''; }
+    else if (kind === 'warning') { ctx.recipient = k ? k.name : c.respondent; if (k) { const late = k.orders.filter((o) => o.dueAt && ((o.doneAt && o.doneAt > o.dueAt) || (!o.doneAt && o.dueAt < t))); if (late.length) ctx.facts = `合約訂明工單須於 ${k.slaDays} 日內完成。以下 ${late.length} 宗工單超出限期：\n` + late.map((o) => `・${cnDate(o.issuedAt)}發出「${o.desc}」，限期${cnDate(o.dueAt)}，${o.doneAt ? `於${cnDate(o.doneAt)}完成` : '至今未完成'}`).join('\n'); ctx.clause = k.contract; } else if (done) ctx.facts = '本處' + done + '。'; ctx.deadline = ctx.nextDate; }
+    else if (kind === 'refuse') { ctx.recipient = c.complainant; }
+    return ctx;
+  }
+
+  // ---------- 對話準備 ----------
+  VIEWS.prep = function (caseId) {
+    const c = caseId ? caseById(caseId) : null;
+    const keys = Object.keys(R.SCENARIOS);
+    let sel = c ? (keys.find((k) => R.SCENARIOS[k].types.includes(c.type)) || keys[0]) : keys[0];
+    let tab = 'playbook';
+    const render = () => {
+      const sc = R.SCENARIOS[sel];
+      $('#main').innerHTML = `<div class="card-head"><h1>對話準備${c ? ` · ${esc(c.ref)}` : ''}</h1><select id="pCase" style="width:auto"><option value="">— 唔連結個案 —</option>${S.cases.filter(isOpen).map((x) => `<option value="${x.id}" ${c && x.id === c.id ? 'selected' : ''}>${esc(x.ref)} ${esc(x.title)}</option>`).join('')}</select></div>
+        <p class="muted small">你幾乎冇強制力，但你要結果。真正嘅工作係：喺唔動用強制力嘅情況下，攞到對方自願配合。如果未決定要唔要傾，先去「形勢判斷」。</p>
+        ${c ? `<div class="card"><div class="card-head"><h3>三條線</h3><button class="btn small" id="pEditPrep">編輯</button></div><dl class="kv"><dt>目標</dt><dd>${esc(c.prep.goal) || '<span class="muted">未定</span>'}</dd><dt>底線</dt><dd>${esc(c.prep.bottom) || '<span class="muted">未定</span>'}</dd><dt>我嘅 BATNA</dt><dd>${esc(c.prep.batna) || '<span class="muted">未定——答唔到就唔應該開始傾</span>'}</dd><dt>對方利益</dt><dd>${esc(c.prep.interest) || '<span class="muted">未知——唔知之前任何方案都係亂估</span>'}</dd></dl><p class="tiny muted" style="margin-top:6px">寫畀自己睇：對方唔係敵人，佢想要嘅係 ___。</p></div>` : ''}
+        <div class="tabs"><button class="${tab === 'playbook' ? 'active' : ''}" data-tab="playbook">場景 playbook</button><button class="${tab === 'phrases' ? 'active' : ''}" data-tab="phrases">對白庫</button><button class="${tab === 'checklist' ? 'active' : ''}" data-tab="checklist">出門前檢查</button></div>
+        ${tab === 'playbook' ? `<div class="row"><div><label>場景</label><select id="pScen">${keys.map((k) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${esc(R.SCENARIOS[k].label)}</option>`).join('')}</select></div></div>
+          <div class="grid cols-2"><div><div class="card"><h3>佢真正想要／驚嘅係咩</h3><ul class="small">${sc.fear.map((f) => `<li>${esc(f)}</li>`).join('')}</ul><p class="tiny muted">唔同嘅驚，要唔同嘅拆法。所以唔好未問就開始講條款。</p></div>
+          <div class="card"><h3>次序（可以照讀）</h3>${sc.steps.map(([k, v]) => `<div class="step"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}</div></div>
+          <div><div class="card"><h3>對方可能點回應 → 你點接</h3>${sc.pushback.map(([a, b]) => `<div class="step"><div class="k">如果佢話 ${esc(a)}</div><div class="v">→ ${esc(b)}</div></div>`).join('')}</div>
+          <div class="card"><h3>幾時收手</h3><p class="small">${esc(sc.stop)}</p><h3>書面跟進</h3><p class="small">${esc(sc.record)}</p></div>
+          <div class="card"><h3>收尾一定要齊四樣</h3><p class="small"><strong>邊個、做咩、幾時、點覆。</strong>聽到「係呀，就係咁」先算真 buy-in；「係係係，知啦」係想你走。</p></div></div></div>`
+        : tab === 'phrases' ? `<div class="grid cols-2">${R.PHRASES.map((p) => `<div class="card"><h3>${esc(p.cat)}</h3>${p.items.map((i) => `<div class="quote">${esc(i)}</div>`).join('')}</div>`).join('')}</div>`
+        : `<div class="card"><h3>出門前</h3>${['睇清楚檔案——唔好問你檔案入面已經有嘅嘢，改成確認：「我睇檔案見到你七月三號同八月十一號都報過——係咪即係中間嗰個月都冇停過？」', '目標、底線、BATNA 寫低咗', '對方嘅利益估咗至少三個可能', '開場第一句（accusation audit）寫好，講完唔加「但係」', '一條「內行嘅窄問題」建立可信度：「你個天花濕嗰笪，係咪朝早會明顯啲？」', '第三層問題（影響）唔好跳：「咁你間房而家瞓唔瞓到人？」', '金牌先出，唔郁先出狼狗；一次只出一隻；講唔出口嘅狼狗唔好放', '同類個案可以講，但講唔得出邊個單位', '渠道啱唔啱？書面止唔到一個覺得冇人聽佢講嘅住戶；口頭定唔死將來要追究嘅嘢', '對方啱啱爆發嗰十五分鐘唔好談判。聽、記低、約時間', '回嚟即日：紀錄 + 紀錄信'].map((i) => `<label class="check" style="margin-bottom:8px"><input type="checkbox"> ${esc(i)}</label>`).join('')}</div>`}`;
+      $('#pCase').onchange = (e) => { location.hash = e.target.value ? '#/prep/' + e.target.value : '#/prep'; };
+      $$('[data-tab]').forEach((b) => b.onclick = () => { tab = b.dataset.tab; render(); });
+      const ps = $('#pScen'); if (ps) ps.onchange = (e) => { sel = e.target.value; render(); };
+      const ep = $('#pEditPrep'); if (ep) ep.onclick = () => prepForm(c);
+    };
+    render();
+  };
+
+  // ---------- 形勢判斷 ----------
+  VIEWS.review = function (caseId) {
+    if (caseId) return reviewCase(caseId);
+    const t = today();
+    const open = S.cases.filter((c) => isOpen(c) && !isSafety(c));
+    const groups = { wait: [], push: [], close: [], undecided: [] };
+    open.forEach((c) => { if (c.triage && ['wait', 'push', 'close'].includes(c.triage)) groups[c.triage].push(c); else groups.undecided.push(c); });
+    const stalled = open.filter((c) => stalledDays(c) >= 60);
+    const block = (key, title, note, arr) => `<div class="card"><div class="card-head"><h3>${title}（${arr.length}）</h3><span class="muted small">${note}</span></div>${arr.length ? `<div class="list">${arr.map((c) => `<div class="item ${stalledDays(c) >= 60 ? 'overdue' : ''}"><div class="body" data-href="#/case/${c.id}"><div class="title">${esc(c.ref)} · ${esc(c.title)}</div><div class="meta"><span>${stalledDays(c)} 日冇進展</span><span>階梯 ${c.escalation}</span>${c.triageReason ? `<span>${esc(c.triageReason)}</span>` : ''}</div></div><div class="seg"><button data-tri="wait" data-id="${c.id}" class="${c.triage === 'wait' ? 'on-even' : ''}">等得</button><button data-tri="push" data-id="${c.id}" class="${c.triage === 'push' ? 'on-me' : ''}">要推</button><button data-tri="close" data-id="${c.id}" class="${c.triage === 'close' ? 'on-them' : ''}">應該結</button></div></div>`).join('')}</div>` : '<div class="empty">冇</div>'}</div>`;
+    $('#main').innerHTML = `<h1>形勢判斷 · 個案盤點</h1>
+      <p class="muted small">呢單嘢，究竟應唔應該爭落去？前線最大嘅隱性損耗係：十幾單個案各自慢慢爛，冇一單係決定過唔跟，亦冇一單真正推到尾。打仗最貴嘅唔係輸，係拖。每月掃一次：呢單今個月有冇實質進展？連續兩個月冇，就要決定升級定結案。</p>
+      ${stalled.length ? `<div class="banner warn"><strong>${stalled.length} 宗連續兩個月冇實質進展</strong>判斷準則：再拖三個月會唔會變好？會（等緊報告、工程、第三方）→ 拖得，但定死檢查點。唔會（純粹對方唔郁，你冇新籌碼）→ 而家決定升級定結案。最差係唔升級又唔結案。</div>` : ''}
+      <p class="small muted">安全個案唔喺呢度——冇得計數。弱勢住戶個案嘅判斷應該係轉介，唔係「值唔值得搞」。唔好見單都話要推——呢頁最大嘅價值係畀你批准自己放低啲唔值得嘅嘢。</p>
+      ${block('undecided', '未分類', '逐單決定', groups.undecided)}${block('push', '要推', '定死下一步同期限，去個案頁升級', groups.push)}${block('wait', '等得', '等緊第三方——定死檢查點', groups.wait)}${block('close', '應該結', '書面記低點解唔推、幾時再睇，然後結案', groups.close)}
+      <div class="card"><h3>你自己嘅五個弱點（對住鏡照）</h3><p class="small muted">呢五樣本身都係美德，正因為係美德，先至可以被利用。如果你發現每單都想贏到底、或者每單都想避，值得留意。</p><div class="grid cols-3">${R.WEAKNESS.map((w) => `<div class="card flat"><strong>${esc(w.name)}</strong><div class="small">${esc(w.desc)}</div></div>`).join('')}</div></div>`;
+    $$('[data-tri]').forEach((b) => b.onclick = () => { const c = caseById(b.dataset.id); const tri = b.dataset.tri; openModal(`<h2>${esc(c.ref)} → ${{ wait: '等得', push: '要推', close: '應該結' }[tri]}</h2><form id="triForm"><div class="row full"><div><label>一句理由（寫入紀錄）</label><input name="reason" value="${esc(c.triageReason)}" required placeholder="${tri === 'wait' ? '等測漏報告，10月15日再睇' : tri === 'push' ? '對方唔郁，本處有紀錄，升級去正式程序' : '對方唔郁而本處冇新籌碼，三個月後再睇'}"></div></div><div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`); $('#mCancel').onclick = closeModal; $('#triForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); c.triage = tri; c.triageReason = d.reason; c.log.push({ at: nowStamp(), channel: '書面', party: '本處', said: '', outcome: `盤點：${{ wait: '等得', push: '要推', close: '應該結' }[tri]}——${d.reason}`, next: '' }); save(); closeModal(); route(); }; });
+    bindItems();
+  };
+  function reviewCase(id) {
+    const c = caseById(id); if (!c) { $('#main').innerHTML = '<div class="empty">搵唔到</div>'; return; }
+    const sv = c.seven || {}; const fv = c.five || {};
+    const losses = Object.values(sv).filter((v) => v === 'them').length; const wins = Object.values(sv).filter((v) => v === 'me').length;
+    const days = stalledDays(c);
+    $('#main').innerHTML = `<div class="card-head"><div><div class="muted small">形勢判斷</div><h1>${esc(c.ref)} · ${esc(c.title)}</h1></div><a class="btn" href="#/case/${c.id}">返回個案</a></div>
+      ${isSafety(c) ? '<div class="banner danger"><strong>安全個案冇得計數</strong>即刻處理。呢頁只適用於有酌情空間嘅個案。</div>' : ''}
+      ${c.vulnerable ? '<div class="banner warn"><strong>弱勢住戶唔適用成本計算</strong>判斷應該係轉介，唔係「呢單唔值得搞」。</div>' : ''}
+      <div class="grid cols-2"><div class="card"><div class="card-head"><h3>七計對比</h3><span class="tag ${losses >= 3 ? 'danger' : 'ok'}">你贏 ${wins} · 輸 ${losses}</span></div><p class="small muted">出警告信之前行一次。輸三條或以上，就唔好行強硬路線。最常見嘅失敗唔係「道」唔夠，係「將」同「法」唔夠——你道理企得住晒，但手上有廿三單，冇時間推呢單到尾。</p>
+        ${R.SEVEN.map((q, i) => `<div class="seven-row"><div class="small">${i + 1}. ${esc(q)}</div><div class="seg"><button data-sv="${i}" data-v="me" class="${sv[i] === 'me' ? 'on-me' : ''}">我方</button><button data-sv="${i}" data-v="even" class="${sv[i] === 'even' ? 'on-even' : ''}">平手</button><button data-sv="${i}" data-v="them" class="${sv[i] === 'them' ? 'on-them' : ''}">對方</button></div></div>`).join('')}
+        ${losses >= 3 ? '<div class="banner danger small" style="margin-top:10px">唔好行強硬路線。考慮伐謀／伐交：改變佢嘅盤算，或者借第三方。</div>' : ''}</div>
+      <div><div class="card"><h3>五事</h3><p class="small muted">紅嘅標出。</p>${R.FIVE.map((f) => `<div style="margin-bottom:10px"><label>${f.name}　<span class="muted" style="font-weight:400">${esc(f.q)}</span></label><div class="row" style="grid-template-columns:1fr auto;margin:0"><input data-five="${f.key}" value="${esc(fv[f.key] || '')}" placeholder="一句"><button class="btn small ${fv[f.key + '_red'] ? 'danger' : ''}" data-fivered="${f.key}">${fv[f.key + '_red'] ? '已標紅' : '標紅'}</button></div></div>`).join('')}</div>
+      <div class="card"><h3>兩邊嘅底</h3><dl class="kv"><dt>我傾唔掂會點</dt><dd>${esc(c.prep.batna) || '<span class="muted">未答——答唔到就唔應該開始傾</span>'}</dd><dt>佢傾唔掂會點</dt><dd>${esc(c.prep.theirBatna) || '<span class="muted">未答——佢嘅最差情況唔差，佢就冇動力</span>'}</dd></dl><button class="btn small" id="rvPrep" style="margin-top:8px">編輯</button></div></div></div>
+      <div class="grid cols-2"><div class="card"><h3>拖係最大嘅敵人</h3><p class="small">已經 <strong>${days}</strong> 日冇實質進展。再拖三個月會唔會變好？</p><div class="seg"><button data-tri="wait" class="${c.triage === 'wait' ? 'on-even' : ''}">會——等得，定檢查點</button><button data-tri="push" class="${c.triage === 'push' ? 'on-me' : ''}">唔會——要推</button><button data-tri="close" class="${c.triage === 'close' ? 'on-them' : ''}">唔會——應該結</button></div>${c.triageReason ? `<p class="small" style="margin-top:8px">${esc(c.triageReason)}</p>` : ''}</div>
+      <div class="card"><h3>留返個缺口</h3><p class="small">一個冇晒退路嘅人唔會投降，只會死拚。唔好將「配合」同「認錯」綁埋——好多拒絕配合嘅人，佢拒絕嘅係認錯，唔係配合。</p><label>我而家開出嘅條件，對方接受咗之後仲有冇面？</label><input id="rvExit" value="${esc(c.prep.exit || '')}" placeholder="「而家要傾嘅唔係邊個錯，係點樣整同點分擔」"></div></div>
+      <div class="card"><h3>建議層級</h3><div class="ladder">${R.LADDER.map((l) => `<div class="rung ${l.level === c.escalation ? 'current' : ''}"><div class="lvl">${l.level}</div><div><strong>${l.name}</strong> <span class="muted small">${l.classic}</span><div class="small">${l.desc}</div></div></div>`).join('')}</div><p class="small muted" style="margin-top:8px">而家喺第 ${c.escalation} 級。冇試過上一層，唔好跳去下一層——唔係因為要溫和，係因為紀錄上見到你跳步，對方可以話你冇畀機會佢改善。升級去個案頁做。</p></div>`;
+    $$('[data-sv]').forEach((b) => b.onclick = () => { c.seven = c.seven || {}; c.seven[b.dataset.sv] = b.dataset.v; save(); reviewCase(id); });
+    $$('[data-five]').forEach((i) => i.onchange = () => { c.five = c.five || {}; c.five[i.dataset.five] = i.value.trim(); save(); });
+    $$('[data-fivered]').forEach((b) => b.onclick = () => { c.five = c.five || {}; c.five[b.dataset.fivered + '_red'] = !c.five[b.dataset.fivered + '_red']; save(); reviewCase(id); });
+    $('#rvPrep').onclick = () => prepForm(c);
+    $('#rvExit').onchange = (e) => { c.prep.exit = e.target.value.trim(); save(); };
+    $$('[data-tri]').forEach((b) => b.onclick = () => { const tri = b.dataset.tri; openModal(`<h2>${{ wait: '等得', push: '要推', close: '應該結' }[tri]}</h2><form id="triForm"><div class="row full"><div><label>一句理由（寫入紀錄）</label><input name="reason" value="${esc(c.triageReason)}" required></div></div><div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`); $('#mCancel').onclick = closeModal; $('#triForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); c.triage = tri; c.triageReason = d.reason; c.log.push({ at: nowStamp(), channel: '書面', party: '本處', said: '', outcome: `盤點：${{ wait: '等得', push: '要推', close: '應該結' }[tri]}——${d.reason}`, next: '' }); save(); closeModal(); reviewCase(id); }; });
+  }
+
+  // ---------- 設定 ----------
+  VIEWS.settings = function () {
+    const st = S.settings;
+    $('#main').innerHTML = `<h1>設定／備份</h1><div class="grid cols-2"><div class="card"><h3>你嘅資料（信件會自動用）</h3><form id="setForm">
+      <div class="row"><div><label>姓名</label><input name="officerName" value="${esc(st.officerName)}"></div><div><label>物業管理人牌照號碼</label><input name="licenceNo" value="${esc(st.licenceNo)}" placeholder="第626章牌照條件"></div></div>
+      <div class="row"><div><label>屋邨／物業名稱</label><input name="estate" value="${esc(st.estate)}"></div><div><label>辦事處</label><input name="office" value="${esc(st.office)}"></div></div>
+      <div class="row"><div><label>電話</label><input name="phone" value="${esc(st.phone)}"></div><div><label>電郵</label><input name="email" value="${esc(st.email)}"></div></div>
+      <div class="row"><div><label>外觀</label><select name="theme"><option value="auto" ${st.theme === 'auto' ? 'selected' : ''}>跟系統</option><option value="light" ${st.theme === 'light' ? 'selected' : ''}>淺色</option><option value="dark" ${st.theme === 'dark' ? 'selected' : ''}>深色</option></select></div></div>
+      <button class="btn primary" type="submit">儲存</button></form><p class="tiny muted" style="margin-top:8px">${esc(R.LICENCE_NOTE)}</p></div>
+      <div><div class="card"><h3>備份</h3><p class="small">資料只儲存喺呢部機呢個瀏覽器嘅 localStorage。清除瀏覽紀錄、換機、換瀏覽器都會冇。<strong>每星期匯出一次。</strong></p><div class="btn-row"><button class="btn primary" id="exportBtn">匯出 JSON</button><label class="btn">匯入 JSON<input type="file" id="importFile" accept="application/json" hidden></label><button class="btn" id="importPaste">貼上 JSON 匯入</button><button class="btn" id="exportCsv">匯出個案 CSV</button></div><p class="tiny muted" style="margin-top:8px">匯出檔案包含住戶個人資料（第486章）。存喺公司指定位置，唔好放個人雲端或者傳出去。</p></div>
+      <div class="card"><h3>統計</h3><dl class="kv"><dt>個案</dt><dd>${S.cases.length}（未結案 ${S.cases.filter(isOpen).length}）</dd><dt>承辦商</dt><dd>${S.contractors.length}</dd><dt>巡查紀錄</dt><dd>${S.inspections.length}</dd><dt>信件</dt><dd>${S.letters.length}</dd></dl></div>
+      <div class="card"><h3>危險區</h3><div class="btn-row"><button class="btn" id="demoBtn">載入示範資料</button><button class="btn danger" id="wipeBtn">清除全部資料</button></div></div></div></div>`;
+    $('#setForm').onsubmit = (e) => { e.preventDefault(); Object.assign(S.settings, formData(e.target)); save(); applyTheme(); toast('已儲存'); route(); };
+    const importData = (txt) => { try { const d = JSON.parse(txt); if (!d || !Array.isArray(d.cases)) throw new Error('格式唔啱'); confirmDialog(`匯入會覆蓋現有資料（${S.cases.length} 宗個案）。繼續？`, () => { S = Object.assign(blank(), d); save(); applyTheme(); route(); toast('已匯入'); }); } catch (err) { toast('匯入失敗：' + err.message); } };
+    $('#exportBtn').onclick = () => download(`pmo-backup-${today()}.json`, JSON.stringify(S, null, 2), 'application/json');
+    $('#exportCsv').onclick = () => { const rows = [['編號', '標題', '類型', '處所', '座', '單位', '投訴人', '對方', '開立', '狀態', '階梯', '下一步', '期限', '應承覆', '冇進展日數']]; S.cases.forEach((c) => rows.push([c.ref, c.title, R.CASE_TYPES[c.type].label, R.PREMISES[c.premises].label, c.block, c.unit, c.complainant, c.respondent, c.openedAt, STATUS[c.status], c.escalation, c.nextAction, c.nextDue, c.promisedReplyBy, isOpen(c) ? stalledDays(c) : ''])); download(`pmo-cases-${today()}.csv`, '﻿' + rows.map((r) => r.map((v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\n'), 'text/csv'); };
+    $('#importFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => importData(rd.result); rd.readAsText(f); };
+    $('#importPaste').onclick = () => { openModal(`<h2>貼上備份 JSON</h2><textarea id="impBody" style="min-height:220px" placeholder="{ &quot;cases&quot;: [...] }"></textarea><div class="btn-row" style="margin-top:10px"><button class="btn primary" id="impOk">匯入</button><button class="btn" id="mCancel">取消</button></div>`); $('#mCancel').onclick = closeModal; $('#impOk').onclick = () => { const t = $('#impBody').value; closeModal(); importData(t); }; };
+    $('#demoBtn').onclick = () => { seedDemo(); route(); toast('已載入示範資料'); };
+    $('#wipeBtn').onclick = () => confirmDialog('清除全部資料？先匯出備份。', () => { S = blank(); save(); route(); toast('已清除'); });
+  };
+  function download(name, content, type) {
+    let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+    if (embedded) {
+      openModal(`<h2>${esc(name)}</h2><p class="small">呢個環境唔可以直接下載檔案。按「複製」，然後貼去一個文字檔儲存。</p><textarea id="dlBody" style="min-height:260px" readonly></textarea><div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dlCopy">複製</button><button class="btn" id="mCancel">關閉</button></div>`);
+      $('#dlBody').value = content; $('#mCancel').onclick = closeModal;
+      $('#dlCopy').onclick = () => { $('#dlBody').select(); (navigator.clipboard ? navigator.clipboard.writeText(content) : Promise.reject()).then(() => toast('已複製'), () => { document.execCommand('copy'); toast('已複製'); }); };
+      return;
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ---------- 啟動 ----------
+  load();
+  if (window.PMO_AUTOSEED && !S.cases.length) { let fresh = true; try { fresh = !localStorage.getItem(STORE_KEY); } catch (e) { fresh = false; } if (fresh) seedDemo(); }
+  window.addEventListener('hashchange', route);
+  $('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
+  $('#quickAddBtn').onclick = () => caseForm();
+  $('#modalBackdrop').onclick = (e) => { if (e.target === e.currentTarget) closeModal(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  route();
+  window.PMO = { state: () => S, save, seedDemo, findRoute };
+})();
+
+</script>
+</body>
+</html>

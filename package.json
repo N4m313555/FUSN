@@ -1,0 +1,15 @@
+{
+  "name": "pmo-workbench",
+  "version": "1.0.0",
+  "description": "香港物業主任日常工作台：個案跟進、法規導航、信件草擬、對話準備、形勢判斷",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve -l 8080 .",
+    "test": "node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "license": "MIT"
+}
