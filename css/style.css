@@ -177,6 +177,13 @@ mark { background: var(--warn-soft); color: var(--text); padding: 0 2px; border-
 .seg button.on-them { background: var(--danger-soft); color: var(--danger); font-weight: 600; }
 .seg button.on-even { background: var(--surface-2); color: var(--text); font-weight: 600; }
 .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+.grid-table td, .grid-table th { padding: 3px 6px; text-align: center; }
+.grid-table td:first-child { text-align: left; white-space: nowrap; }
+.cell { width: 44px; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; font: inherit; font-weight: 700; color: var(--text); }
+.cell.ok { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
+.cell.debris { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+.photo-strip img { page-break-inside: avoid; }
+.print-sheet table { font-size: .9rem; } .print-sheet td, .print-sheet th { border: 1px solid var(--border); padding: 2px 6px; }
 
 @media print {
   .sidebar, .topbar, .no-print, .toast, .modal-backdrop { display: none !important; }
@@ -187,5 +194,6 @@ mark { background: var(--warn-soft); color: var(--text); padding: 0 2px; border-
   textarea.letter { border: none; min-height: 0; height: auto; overflow: visible; }
   .print-letter { white-space: pre-wrap; font-size: 12pt; line-height: 1.8; }
   .print-letter:last-child { page-break-after: auto; }
+  .print-sheet td, .print-sheet th { border: 1px solid #000; }
   table { font-size: 10pt; }
 }

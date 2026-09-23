@@ -420,6 +420,14 @@ ${hasPhoto ? '附件一:  貴單位佔用走火通道之相片\n' : ''}副本抄
     wings: ['A翼', 'B翼', 'C翼'],
     officers: ['Ron', 'Matthew', 'Ellie', 'Naylor', 'Karen', 'Joyce', 'YIM', 'Andy', 'JOAN', 'Daisy', 'Katy', 'Priscilla', 'Vincent', 'Ling'],
     letterRefPrefix: 'FUSN/26/L', letterSeq: 760, caseRefPrefix: 'FUS26-', caseSeq: 1,
+    floors: { min: 2, max: 35 },
+    noUnitFloors: { SG: [2] },   // 善景樓 2 樓係安老院，冇住宅單位
+    // 單位尾二位 → 翼。由投訴登記表同停水範圍表歸納：善景／善美／善雅／善翠 全層一樣；善群／善鄰 20 樓以下同 21 樓以上唔同。
+    wingRules: {
+      default: { any: [[1, 8, 'B翼'], [9, 16, 'A翼'], [17, 24, 'C翼']] },
+      SK: { low: [[1, 12, 'B翼'], [13, 24, 'A翼'], [25, 36, 'C翼']], high: [[1, 10, 'B翼'], [11, 20, 'A翼'], [21, 30, 'C翼']] },
+      SL: { low: [[1, 12, 'B翼'], [13, 24, 'A翼'], [25, 36, 'C翼']], high: [[1, 10, 'B翼'], [11, 20, 'A翼'], [21, 30, 'C翼']] },
+    },
   };
 
   const SEEPAGE_NEW_PROCEDURE_DATE = '2026-07-16';

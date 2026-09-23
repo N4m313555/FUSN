@@ -14,6 +14,7 @@ for (const cand of ['playwright', process.env.PLAYWRIGHT_GLOBAL, '/opt/node22/li
 }
 if (!chromium) { console.error('搵唔到 playwright：npm i -D playwright，或者設 PLAYWRIGHT_GLOBAL'); process.exit(2); }
 const XLSX = require(path.join(root, 'vendor', 'xlsx.full.min.js'));
+const JSZip = require(path.join(root, 'vendor', 'jszip.min.js'));
 // 合成一個細 Excel 測試檔（格式跟公司嘅投訴登記表、工程項目、信件紀錄）
 const fixture = path.join(root, 'tests', 'fixture.xlsx');
 {
@@ -213,13 +214,70 @@ check(body.includes('本處已於') && body.includes('惟至今仍未見處理')
 await go('#/debris');
 await page.check('[data-sel="' + dEntry.id + '"]'); await page.click('#batchLetters'); await page.click('#mYes'); await page.waitForTimeout(150);
 t = await text();
-check(t.includes('批量雜物信（1 封）') && t.includes('本公司檔號：FUSN/26/L'), 'batch letters page');
+check(t.includes('雜物信（1 封）') && t.includes('本公司檔號：FUSN/26/L'), 'batch letters page');
 dAfter = await page.evaluate((id) => window.PMO.state().debris.find((d) => d.id === id), dEntry.id);
 check(dAfter.status === '已出第二次信' && !!dAfter.letter2Ref, 'batch issued second letter');
 await go('#/register');
 check((await text()).includes(refShown) && (await text()).includes('有關 業戶佔用公眾地方（SK912）'), 'letter register lists issued letters');
 await go('#/debris/table');
 check((await text()).includes('善群樓 9樓') && (await text()).includes('SK912'), 'printable debris table grouped by block/floor');
+
+// 快速出雜物信：相片 + 座 + 單位 → Word
+await go('#/debris');
+const jpegB64 = await page.evaluate(() => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 480; const c = cv.getContext('2d'); c.fillStyle = '#888'; c.fillRect(0, 0, 640, 480); c.fillStyle = '#c33'; c.fillRect(200, 150, 240, 180); return cv.toDataURL('image/jpeg', 0.8).split(',')[1]; });
+await page.selectOption('#qBlock', '善群樓');
+await page.fill('#qUnit', '2118'); await page.waitForTimeout(50);
+t = await page.locator('#qDerived').innerText();
+check(t.includes('SK2118') && t.includes('21樓') && t.includes('A翼') && t.includes('第一次通知'), 'quick panel derives floor/wing for SK2118: ' + t);
+await page.fill('#qUnit', '707'); await page.waitForTimeout(50);
+check((await page.locator('#qDerived').innerText()).includes('7樓 B翼'), 'SK707 derives 7樓 B翼 (01–12 = B翼 below 21/F)');
+await page.selectOption('#qBlock', '善景樓'); await page.fill('#qUnit', '1512'); await page.waitForTimeout(50);
+check((await page.locator('#qDerived').innerText()).includes('15樓 A翼'), 'SG1512 derives 15樓 A翼');
+await page.selectOption('#qBlock', '善群樓'); await page.fill('#qUnit', '2905'); await page.fill('#qItems', '木櫃一個');
+await page.setInputFiles('#qPhotos', { name: 'debris.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(jpegB64, 'base64') });
+const seqBefore = await page.evaluate(() => window.PMO.state().settings.letterSeq);
+const [download] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('#qGo')]);
+const docxPath = path.join(root, 'tests', 'out.docx'); await download.saveAs(docxPath);
+check(/FUSN26L\d{4}_SK2905\.docx/.test(download.suggestedFilename()), 'docx filename uses ref and unit code: ' + download.suggestedFilename());
+{
+  const zip = await JSZip.loadAsync(fs.readFileSync(docxPath));
+  const doc = await zip.file('word/document.xml').async('string');
+  const d = new Date(); const cn = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  const expectRef = 'FUSN/26/L' + String(seqBefore).padStart(4, '0');
+  check(doc.includes('本公司檔號：' + expectRef) || doc.includes(expectRef), 'docx carries letter ref ' + expectRef);
+  check(doc.includes('善群樓') && doc.includes('2905') && doc.includes('木櫃一個'), 'docx carries block, unit and items');
+  check(doc.includes(`<w:t xml:space="preserve">${d.getFullYear()}</w:t>`) && doc.includes(`<w:t xml:space="preserve">${d.getMonth() + 1}</w:t>`), 'docx carries today\'s date');
+  check(doc.includes('P1-091046') && doc.includes('吳泰豐') && doc.includes('2661 1393') && doc.includes('富善邨業主立案法團'), 'docx carries signatory, licence, phone, IO');
+  check(!/\{\{[A-Z_]+\}\}/.test(doc), 'no unfilled placeholders left');
+  check(!!zip.file('word/media/photo1.jpeg') && doc.includes('r:embed="rIdPhoto1"') && doc.includes('<w:drawing>'), 'photo embedded as attachment');
+  check(!!zip.file('word/media/image3.jpeg'), 'letterhead image kept');
+  const rels = await zip.file('word/_rels/document.xml.rels').async('string');
+  check(rels.includes('Target="media/photo1.jpeg"'), 'photo relationship added');
+}
+fs.unlinkSync(docxPath);
+await page.waitForTimeout(200);
+const q = await page.evaluate(() => window.PMO.state().debris.find((d) => d.unit === '2905'));
+check(q && q.floor === '29樓' && q.wing === 'B翼' && q.status === '已出第一次信' && q.photoCount === 1 && /^FUSN\/26\/L\d{4}$/.test(q.letter1Ref), 'quick letter recorded on debris register with derived floor/wing');
+check((await page.evaluate(() => window.PMO.state().letters.slice(-1)[0].debrisId)) === q.id, 'letter register entry links to debris entry');
+check((await page.evaluate(async (id) => (await window.PMO.PhotoDB.get(id)).length, q.id)) === 1, 'photo stored in IndexedDB');
+// 第二次：同一單位再出 → 第二次通知
+await page.selectOption('#qBlock', '善群樓'); await page.fill('#qUnit', '2905'); await page.waitForTimeout(50);
+check((await page.locator('#qDerived').innerText()).includes('第二次通知'), 'same unit again is a second notice');
+
+// 樓層巡查剔格表
+await go('#/rounds');
+check((await text()).includes('樓層巡查剔格表'), 'rounds view');
+await page.click('[data-block="善雅樓"]'); await page.waitForTimeout(80);
+await page.click('#roundForm button[type=submit]'); await page.waitForTimeout(100);
+await page.click('[data-cell="12-A翼"]'); await page.waitForTimeout(80);
+check((await page.locator('[data-cell="12-A翼"]').innerText()) === '✓', 'cell cycles to ok');
+await page.click('[data-cell="12-A翼"]'); await page.waitForTimeout(80);
+check(await page.locator('#debrisForm').count() === 1 && (await page.inputValue('#debrisForm [name=floor]')) === '12樓' && (await page.inputValue('#debrisForm [name=wing]')) === 'A翼', 'debris cell opens prefilled debris form');
+await page.click('#mCancel'); await page.waitForTimeout(50);
+check((await page.evaluate(() => window.PMO.state().rounds.find((r) => r.block === '善雅樓').cells['12-A翼'])) === 'debris', 'cell state saved');
+await go('#/rounds/print');
+check((await text()).includes('善雅樓　樓層巡查剔格表') && (await text()).includes('35 樓'), 'printable tick sheet');
+await go('#/rounds'); await page.screenshot({ path: path.join(root, 'tests', 'shot-rounds.png') });
 
 // 匯入 Excel
 await go('#/import');
