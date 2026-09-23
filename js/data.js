@@ -140,6 +140,7 @@ window.REF = (function () {
     warning: { label: '警告信', purpose: '要紀錄，唔係要改善——出之前確認已經行過口頭同紀錄信', order: ['事實（日期、次數、條款）', '違反邊條', '時限', '後果', '留缺口：「如與本處理解有異，請於某日前回覆」'] },
     access:  { label: '安排檢查通知', purpose: '要對方配合——軟、短、重點喺對方嘅好處', order: ['對比法：唔係查你、唔係要你賠，係排除你', '建議時間（畀對方揀）', '大概幾耐、邊個上', '聯絡方法'] },
     notice:  { label: '通告／提示', purpose: '大堂通告或者提示信', order: ['講事實同要求', '時限', '協助（邊個幫手）', '聯絡'] },
+    debris:  { label: '樓層雜物信', purpose: '業戶佔用公眾地方——留底為主，同時畀對方一條路（已清理可不予理會）', order: ['公司檔號、單位、稱呼', '標題：有關 業戶佔用公眾地方', '巡查發現咩、違反咩', '通知：視作垃圾處理、保留追討', '查詢電話', '備註：已清理可不予理會', '物業經理簽署（姓名、牌照）', '附件：相片；副本抄送法團'] },
   };
 
   const LETTER_TEMPLATES = {
@@ -236,6 +237,35 @@ ${facts || '［事實同原因］'}
 ${estate || '［屋邨／物業名稱］'}管理處
 ${officer || '［姓名］'}${licence ? '（物業管理人牌照號碼：' + licence + '）' : ''}
 ${date}`,
+
+    // 按 26L0759 業戶佔用公眾地方（SK707）原信結構
+    debris: ({ fileRef, estateFull, estate, blockUnit, salutation, noticeNo, prevDate, location, items, phone, officeName, manager, managerTitle, managerLicence, managerLicenceLevel, ioName, date, hasPhoto }) =>
+`本公司檔號：${fileRef || '［FUSN/26/L____］'}
+
+${estateFull || estate || '［屋邨］'}
+${blockUnit || '［座／單位］'}
+${salutation || '先生/小姐'}
+
+${salutation || '先生/小姐'}：
+
+有關 業戶佔用公眾地方
+
+${officeName || '管業處'}巡查時發現  閣下於${location || '樓層走廊'}擺放${items ? items : '雜物'}，影響公共衛生及嚴重阻礙走火通道，威脅其他業戶性命財產。同時，此舉已違反消防條例及本邨大廈公契。${noticeNo >= 2 && prevDate ? `本處已於${prevDate}去信通知  閣下清理，惟至今仍未見處理。` : ''}
+
+為確保大廈公共衛生及走火通道暢通無阻，現通知  閣下擺放於走火通道之物品將被視作垃圾處理，並不作另行通知或任何賠償。此外，${officeName || '管業處'}及法團將保留向  閣下追討衍生的相關費用及法律責任。
+
+如有任何查詢，請於辦公時間內致電${phone || '［電話］'}與${officeName || '管業處'}職員聯絡。
+
+備註：如相關物品已完成清理，來信可不予理會。
+
+
+${managerTitle || '物業經理'}
+${manager || '［姓名］'}
+持牌物業管理人${managerLicenceLevel ? '(' + managerLicenceLevel + ')' : ''}${managerLicence ? ' (牌照號碼' + managerLicence + ')' : ''}
+
+${date}
+
+${hasPhoto ? '附件一:  貴單位佔用走火通道之相片\n' : ''}副本抄送: ${ioName || '業主立案法團'}`,
   };
 
   // 對話 playbook（scenarios.md 濃縮）
@@ -373,7 +403,26 @@ ${date}`,
     { name: '愛民', desc: '太錫住戶 → 被無日無之嘅要求纏住，正事做唔完' },
   ];
 
+
+  // ---------- 工程項目 ----------
+  // 狀態流程（由「處理中」工作表歸納）。次序即係流程次序。
+  const WORK_STATUSES = ['事件起稿', '約上門', '出信/通告', '進行中', '報價草稿', '報價已發出', '報價經理批核中', '法團投票中', '法團商議中', '上會追認', '約期/工程中', '完工', 'outstanding'];
+  const WORK_CATEGORIES = ['外牆', '喉管', '消防', '電力', '園藝', '其他'];
+
+  // ---------- 樓層雜物 ----------
+  const DEBRIS_STATUSES = ['已發現', '已出第一次信', '已出第二次信', '已清理', '當垃圾處理', '轉介支援'];
+
+  // ---------- 屋邨預設（富善邨） ----------
+  const ESTATE_PRESET = {
+    estate: '富善邨', estateFull: '大埔富善邨', officeName: '管業處', ioName: '富善邨業主立案法團', phone: '2661 1393',
+    manager: '吳泰豐', managerTitle: '物業經理(富善邨)', managerLicence: 'P1-091046', managerLicenceLevel: '第1級',
+    blocks: [{ name: '善景樓', code: 'SG' }, { name: '善美樓', code: 'SM' }, { name: '善雅樓', code: 'SN' }, { name: '善翠樓', code: 'ST' }, { name: '善群樓', code: 'SK' }, { name: '善鄰樓', code: 'SL' }],
+    wings: ['A翼', 'B翼', 'C翼'],
+    officers: ['Ron', 'Matthew', 'Ellie', 'Naylor', 'Karen', 'Joyce', 'YIM', 'Andy', 'JOAN', 'Daisy', 'Katy', 'Priscilla', 'Vincent', 'Ling'],
+    letterRefPrefix: 'FUSN/26/L', letterSeq: 760, caseRefPrefix: 'FUS26-', caseSeq: 1,
+  };
+
   const SEEPAGE_NEW_PROCEDURE_DATE = '2026-07-16';
 
-  return { PREMISES, CASE_TYPES, ROUTES, LICENCE_NOTE, SOURCES, LADDER, SEVEN, FIVE, ANGER_CHECK, BANNED, LETTER_KINDS, LETTER_TEMPLATES, SCENARIOS, PHRASES, WEAKNESS, SEEPAGE_NEW_PROCEDURE_DATE };
+  return { WORK_STATUSES, WORK_CATEGORIES, DEBRIS_STATUSES, ESTATE_PRESET, PREMISES, CASE_TYPES, ROUTES, LICENCE_NOTE, SOURCES, LADDER, SEVEN, FIVE, ANGER_CHECK, BANNED, LETTER_KINDS, LETTER_TEMPLATES, SCENARIOS, PHRASES, WEAKNESS, SEEPAGE_NEW_PROCEDURE_DATE };
 })();

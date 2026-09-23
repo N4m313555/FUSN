@@ -149,6 +149,8 @@ textarea.letter { min-height: 420px; font-family: var(--font); line-height: 1.7;
 .ladder .rung { display: flex; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; align-items: flex-start; }
 .ladder .rung.current { border-color: var(--accent); background: var(--accent-soft); }
 .ladder .rung .lvl { font-weight: 700; min-width: 2em; }
+.ladder .rung > div:last-child { margin-left: auto; }
+.ladder .rung > div:nth-child(2) { flex: 1; }
 
 .step { padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 8px 8px 0; margin-bottom: 8px; }
 .step .k { font-weight: 600; font-size: .85rem; color: var(--muted); }
@@ -184,4 +186,6 @@ mark { background: var(--warn-soft); color: var(--text); padding: 0 2px; border-
   body { background: #fff; color: #000; font-size: 12pt; }
   textarea.letter { border: none; min-height: 0; height: auto; overflow: visible; }
   .print-letter { white-space: pre-wrap; font-size: 12pt; line-height: 1.8; }
+  .print-letter:last-child { page-break-after: auto; }
+  table { font-size: 10pt; }
 }
