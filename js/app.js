@@ -638,16 +638,25 @@
     $('#demoBtn').onclick = () => { seedDemo(); route(); toast('已載入示範資料'); };
     $('#wipeBtn').onclick = () => confirmDialog('清除全部資料？先匯出備份。', () => { S = blank(); save(); route(); toast('已清除'); });
   };
-  function download(name, content, type) {
-    let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
-    if (embedded) {
-      openModal(`<h2>${esc(name)}</h2><p class="small">呢個環境唔可以直接下載檔案。按「複製」，然後貼去一個文字檔儲存。</p><textarea id="dlBody" style="min-height:260px" readonly></textarea><div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dlCopy">複製</button><button class="btn" id="mCancel">關閉</button></div>`);
-      $('#dlBody').value = content; $('#mCancel').onclick = closeModal;
-      $('#dlCopy').onclick = () => { $('#dlBody').select(); (navigator.clipboard ? navigator.clipboard.writeText(content) : Promise.reject()).then(() => toast('已複製'), () => { document.execCommand('copy'); toast('已複製'); }); };
-      return;
-    }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  // claude.ai artifact 環境：用平台嘅 downloads 能力儲存檔案（會彈確認框）。其他環境用普通瀏覽器下載。
+  let hostDownloads = null;
+  function hostDownloadsApi() { if (hostDownloads) return hostDownloads; hostDownloads = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null); return hostDownloads; }
+  const isEmbedded = () => { try { return window.self !== window.top; } catch (e) { return true; } };
+  // 統一儲存：回傳 'saved' | 'declined' | 'unsupported'
+  async function saveFile(name, data) {
+    const api = await hostDownloadsApi();
+    if (api) { try { await api.save({ filename: name, data }); return 'saved'; } catch (err) { if (err && err.code === 'declined') return 'declined'; if (err && err.code === 'rate_limited') { toast('請等一等再試'); return 'declined'; } console.warn('downloads.save failed', err); if (!isEmbedded()) { anchorDownload(name, data); return 'saved'; } return 'unsupported'; } }
+    if (isEmbedded()) return 'unsupported';
+    anchorDownload(name, data); return 'saved';
   }
+  function anchorDownload(name, data) { const blob = data instanceof Blob ? data : new Blob([data], { type: /\.json$/.test(name) ? 'application/json' : /\.csv$/.test(name) ? 'text/csv' : 'application/octet-stream' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+  function download(name, content) {
+    saveFile(name, content).then((r) => {
+      if (r === 'saved') toast('已儲存 ' + name);
+      else if (r === 'unsupported') { openModal(`<h2>${esc(name)}</h2><p class="small">呢個環境唔可以直接下載檔案。按「複製」，然後貼去一個文字檔儲存。</p><textarea id="dlBody" style="min-height:260px" readonly></textarea><div class="btn-row" style="margin-top:10px"><button class="btn primary" id="dlCopy">複製</button><button class="btn" id="mCancel">關閉</button></div>`); $('#dlBody').value = content; $('#mCancel').onclick = closeModal; $('#dlCopy').onclick = () => { $('#dlBody').select(); (navigator.clipboard ? navigator.clipboard.writeText(content) : Promise.reject()).then(() => toast('已複製'), () => { document.execCommand('copy'); toast('已複製'); }); }; }
+    });
+  }
+
 
 
   // ---------- 屋邨預設、編號、單位代號 ----------
@@ -1009,10 +1018,13 @@
   }
   const docxName = (ref, d) => `${String(ref || 'letter').replace(/[\/\\:*?"<>|]/g, '')}_${debrisCode(d)}.docx`;
   function downloadBlob(name, blob, letterId) {
-    let embedded = false; try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
-    if (embedded) { openModal(`<h2>${esc(name)}</h2><p class="small">呢個網頁環境唔可以下載檔案。請用單一檔案版本（dist/pmo-workbench.html）出 Word；或者按下面列印文字版（有相片附件）。</p><div class="btn-row"><a class="btn primary" href="#/debris/print" id="dlPrint">列印文字版</a><button class="btn" id="mCancel">關閉</button></div>`); $('#mCancel').onclick = closeModal; $('#dlPrint').onclick = () => { if (letterId) batchLetterIds = [letterId]; closeModal(); }; return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    saveFile(name, blob).then((r) => {
+      if (r === 'saved') toast('已儲存 ' + name);
+      else if (r === 'unsupported') { openModal(`<h2>${esc(name)}</h2><p class="small">呢個網頁環境唔可以下載檔案。請用單一檔案版本（dist/pmo-workbench.html）出 Word；或者按下面列印文字版（有相片附件）。</p><div class="btn-row"><a class="btn primary" href="#/debris/print" id="dlPrint">列印文字版</a><button class="btn" id="mCancel">關閉</button></div>`); $('#mCancel').onclick = closeModal; $('#dlPrint').onclick = () => { if (letterId) batchLetterIds = [letterId]; closeModal(); }; }
+      else toast('已取消儲存');
+    });
   }
+
   // 出一封信（文字版入信件紀錄，更新雜物表狀態）；回傳 letter id
   function issueDebrisLetter(d, dateISO) {
     const ctx = letterContext(null, 'debris', d); const ref = consumeLetterRef(); ctx.fileRef = ref; if (dateISO) ctx.date = cnDate(dateISO);
