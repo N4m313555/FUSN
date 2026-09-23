@@ -15,7 +15,8 @@ const html = read('index.html');
 const css = read('css/style.css');
 const data = read('js/data.js');
 const app = read('js/app.js');
-const xlsx = read('vendor/xlsx.full.min.js');
+// SheetJS 嘅代碼頁表入面有大量 U+FFFD 字元，轉成 \uFFFD 轉義（喺 JS 字串入面意思一樣），方便發佈到唔接受呢個字元嘅平台
+const xlsx = read('vendor/xlsx.full.min.js').replace(/\uFFFD/g, '\\uFFFD');
 
 const title = html.match(/<title>([^<]*)<\/title>/)[1];
 const description = html.match(/<meta name="description" content="([^"]*)">/)[1];
