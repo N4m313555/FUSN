@@ -27,7 +27,7 @@ const fixture = path.join(root, 'tests', 'fixture.xlsx');
   ]), '工作表1');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
     ['編號', '事發日期', '過會日期', '單位代號', '樓', '單位', '工程項目', '出標日期', '截標日期', '完工日期', '完工狀態', '工程類別', '座主', '承辦商'],
-    [1, new Date(2026, 6, 5), new Date(2026, 6, 17), 'SN2701', '善雅樓', '2701', '善雅樓高層單位(2701室)更換4吋污水喉工程', new Date(2026, 6, 6), new Date(2026, 6, 7), new Date(2026, 6, 14), '', '喉管', 'Naylor', '展業工程公司'],
+    [1, new Date(2026, 6, 5), new Date(2026, 6, 17), 'SN2702', '善雅樓', '2702', '善雅樓高層單位(2702室)更換4吋污水喉工程', new Date(2026, 6, 6), new Date(2026, 6, 7), new Date(2026, 6, 14), '', '喉管', 'Naylor', '展業工程公司'],
     [2, new Date(2026, 5, 10), new Date(2026, 6, 17), 'SL2118', '善鄰樓', '2118', '善鄰樓2118室廚房外牆防水工程', new Date(2026, 6, 8), new Date(2026, 6, 10), '', '約期中', '外牆', 'Naylor', '榮豐工程(亞洲)有限公司'],
   ]), '工程項目');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
@@ -37,6 +37,19 @@ const fixture = path.join(root, 'tests', 'fixture.xlsx');
     ['FUSN', '/', '26', '/', 'L', '0002', new Date(2026, 0, 2), '檢驗修葺工程諮詢會事宜', 'JOAN', 'HAD'],
     ['FUSN', '/', '26', '/', 'L', '0003', '', '', '', ''],
   ]), 'LETTER');
+  // 住戶登記表（2026 版式：第一行係座名，第二行先係表頭，每座一個工作表）
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['善群樓'],
+    ['單位', '業住', '租戶', '65歲\n以上', '退休\n人士', '獨居\n人士', '姓名(1)', '電話(1)', '姓名(2)', '電話(2)', '緊急聯絡人(1)', '緊急聯絡電話(1)', '緊急聯絡人(2)', '緊急聯絡電話(2)', '備註'],
+    ['0204', 'P', '', 'P', '', 'P', '梁慧玲', '9000 0001', '', '', '陳小姐', '9000 0002', '', '', '行動不便'],
+    ['0205', '', 'P', '', '', '', '萬桂森', '9000 0003', '太太', '9000 0004', '', '', '', '', ''],
+    ['0206', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+  ]), '善群');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ['善鄰樓'],
+    ['單位', '業住', '租戶', '65歲\n以上', '退休\n人士', '獨居\n人士', '姓名(1)', '電話(1)', '姓名(2)', '電話(2)', '緊急聯絡人(1)', '緊急聯絡電話(1)', '緊急聯絡人(2)', '緊急聯絡電話(2)', '備註'],
+    ['1906', 'P', '', 'P', 'P', 'P', '梁業戶', '9000 0005', '', '', '', '', '', '', ''],
+  ]), '善鄰');
   fs.writeFileSync(fixture, XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
 }
 const url = 'file://' + path.join(root, 'index.html');
@@ -292,14 +305,43 @@ await page.selectOption('#impSheet', '工程項目'); await page.waitForTimeout(
 check((await page.inputValue('#impKind')) === 'works', 'import auto-detects works sheet');
 await page.click('#impGo'); await page.waitForTimeout(150);
 const ws = await page.evaluate(() => window.PMO.state().works);
-check(ws.some((w) => w.unitCode === 'SN2701' && w.status === '完工' && w.doneAt === '2026-07-14') && ws.some((w) => w.unitCode === 'SL2118' && w.status === '約期/工程中'), 'works imported with normalised status');
+check(ws.some((w) => w.unitCode === 'SN2702' && w.status === '完工' && w.doneAt === '2026-07-14') && ws.some((w) => w.unitCode === 'SL2118' && w.status === '約期/工程中'), 'works imported with normalised status');
 await page.selectOption('#impSheet', 'LETTER'); await page.waitForTimeout(300);
 check((await page.inputValue('#impKind')) === 'letters', 'import auto-detects letter log');
 await page.click('#impGo'); await page.waitForTimeout(150);
 const ls = await page.evaluate(() => window.PMO.state().letters);
 check(ls.some((l) => l.ref === 'FUSN/26/L0001' && l.recipient === '市建局') && !ls.some((l) => l.ref === 'FUSN/26/L0003'), 'letter log imported, blank pre-numbered rows skipped');
 await page.selectOption('#impSheet', '工程項目'); await page.waitForTimeout(300); await page.click('#impGo'); await page.waitForTimeout(150);
-check((await page.evaluate(() => window.PMO.state().works.filter((w) => w.unitCode === 'SN2701').length)) === 1, 'reimport does not duplicate works');
+check((await page.evaluate(() => window.PMO.state().works.filter((w) => w.unitCode === 'SN2702').length)) === 1, 'reimport does not duplicate works');
+check((await page.evaluate(() => window.PMO.state().contractors.some((k) => k.name === '展業工程公司') && window.PMO.state().contractors.some((k) => k.name === '榮豐工程(亞洲)有限公司'))), 'works import registers contractors');
+// 住戶登記表：偵測 + 一併匯入其他座
+await page.selectOption('#impSheet', '善群'); await page.waitForTimeout(300);
+check((await page.inputValue('#impKind')) === 'residents', 'import auto-detects resident registry');
+check(await page.locator('#impAll').count() === 1 && (await page.isChecked('#impAll')), 'other resident sheets offered and pre-ticked');
+await page.click('#impGo'); await page.waitForTimeout(200);
+const res = await page.evaluate(() => window.PMO.state().residents);
+check(res.length === 3, 'residents imported from both sheets, blank unit skipped: ' + res.length);
+const r204 = await page.evaluate(() => window.PMO.residentFor('善群樓', '204'));
+check(r204 && r204.owner && !r204.tenant && r204.elderly && r204.alone && r204.people[0].name === '梁慧玲' && r204.emergency[0].name === '陳小姐' && r204.note === '行動不便', 'resident record parsed (owner, flags, people, emergency)');
+check((await page.evaluate(() => window.PMO.residentFor('善群樓', '0205'))) && (await page.evaluate(() => window.PMO.residentFor('善群樓', '205').tenant)), 'unit lookup tolerates leading zero and reads tenant flag');
+// 單位查詢
+await page.fill('#unitSearch', 'SK204'); await page.press('#unitSearch', 'Enter'); await page.waitForTimeout(150);
+t = await text();
+check(t.includes('SK204') && t.includes('業戶') && t.includes('65歲以上') && t.includes('獨居') && t.includes('梁慧玲') && t.includes('9000 0001') && t.includes('陳小姐'), 'unit view shows owner, age flags, residents and emergency contact');
+await page.fill('#unitSearch', '善群樓 205'); await page.press('#unitSearch', 'Enter'); await page.waitForTimeout(150);
+t = await text();
+check(t.includes('租戶') && t.includes('萬桂森') && t.includes('太太'), 'unit view via Chinese query shows tenant and both residents');
+await page.fill('#unitSearch', 'SL1906'); await page.press('#unitSearch', 'Enter'); await page.waitForTimeout(150);
+t = await text();
+check(t.includes('退休') && t.includes('梁業戶'), 'second sheet block imported');
+// 相關紀錄：個案 + 工程按單位連結
+await page.fill('#unitSearch', 'SL2118'); await page.press('#unitSearch', 'Enter'); await page.waitForTimeout(150);
+t = await text();
+check(t.includes('善鄰樓2118室廚房外牆防水工程') && t.includes('相關紀錄（'), 'unit view lists linked works');
+await page.fill('#unitSearch', 'SG3211'); await page.press('#unitSearch', 'Enter'); await page.waitForTimeout(150);
+t = await text();
+check(t.includes('FUS26-005') && t.includes('露台天花去水喉'), 'unit view lists linked cases by unit');
+await page.screenshot({ path: path.join(root, 'tests', 'shot-unit.png') });
 await go('#/today');
 check((await text()).includes('樓層雜物') && (await text()).includes('工程項目'), 'today shows works and debris sections');
 await page.screenshot({ path: path.join(root, 'tests', 'shot-today.png'), fullPage: true });
@@ -323,7 +365,7 @@ await go('#/case/' + seep.id);
 await page.screenshot({ path: path.join(root, 'tests', 'shot-case.png'), fullPage: true });
 
 await browser.close();
-try { fs.unlinkSync(fixture); } catch (e) { /* ignore */ }
+if (!process.env.KEEP_FIXTURE) { try { fs.unlinkSync(fixture); } catch (e) { /* ignore */ } }
 if (errors.length) { console.log('JS errors:\n' + errors.join('\n')); }
 if (failures.length) { console.log('FAILED:\n - ' + failures.join('\n - ')); process.exit(1); }
 console.log('smoke ok');

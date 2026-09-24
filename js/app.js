@@ -32,12 +32,12 @@
 
   // ---------- 狀態 ----------
   const defaultSettings = () => ({ officerName: '', licenceNo: '', estate: '', estateFull: '', officeName: '管業處', ioName: '', office: '', phone: '', email: '', theme: 'auto', manager: '', managerTitle: '物業經理', managerLicence: '', managerLicenceLevel: '第1級', blocks: [], wings: ['A翼', 'B翼', 'C翼'], officers: [], letterRefPrefix: '', letterSeq: 1, caseRefPrefix: 'C' });
-  const blank = () => ({ version: 2, settings: defaultSettings(), cases: [], contractors: [], inspections: [], letters: [], works: [], debris: [], rounds: [], seq: 1 });
+  const blank = () => ({ version: 2, settings: defaultSettings(), cases: [], contractors: [], inspections: [], letters: [], works: [], debris: [], rounds: [], residents: [], seq: 1 });
   let S = blank();
   function load() {
     try { const raw = localStorage.getItem(STORE_KEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) { console.warn('load failed', e); }
     S.settings = Object.assign(defaultSettings(), S.settings || {});
-    ['cases', 'contractors', 'inspections', 'letters', 'works', 'debris', 'rounds'].forEach((k) => { if (!Array.isArray(S[k])) S[k] = []; });
+    ['cases', 'contractors', 'inspections', 'letters', 'works', 'debris', 'rounds', 'residents'].forEach((k) => { if (!Array.isArray(S[k])) S[k] = []; });
     if (!Array.isArray(S.settings.blocks)) S.settings.blocks = [];
     applyTheme();
   }
@@ -100,7 +100,7 @@
   }
 
   // ---------- 路由 ----------
-  const TITLES = { today: '今日', cases: '個案', inspections: '巡查紀錄', contractors: '承辦商', works: '工程項目', debris: '樓層雜物', rounds: '樓層巡查', router: '法規導航', letters: '信件草擬', register: '信件紀錄', prep: '對話準備', review: '形勢判斷', settings: '設定／備份', import: '匯入 Excel' };
+  const TITLES = { today: '今日', cases: '個案', inspections: '巡查紀錄', contractors: '承辦商', works: '工程項目', debris: '樓層雜物', rounds: '樓層巡查', unit: '單位查詢', router: '法規導航', letters: '信件草擬', register: '信件紀錄', prep: '對話準備', review: '形勢判斷', settings: '設定／備份', import: '匯入 Excel' };
   function route() {
     const hash = location.hash.replace(/^#\/?/, '') || 'today';
     const [name, arg] = hash.split('/');
@@ -223,7 +223,8 @@
 
     html += `<div class="grid cols-2"><div>`;
     html += `<div class="card"><h3>基本資料</h3><dl class="kv">
-      <dt>位置</dt><dd>${esc(c.block)} ${esc(c.unit)}</dd>
+      <dt>位置</dt><dd>${esc(c.block)} ${esc(c.unit)} ${c.block && c.unit ? `<a class="small" href="#/unit/${encodeURIComponent(unitCodeOf(c.block, c.unit))}">單位紀錄</a>` : ''}</dd>
+      <dt>住戶登記</dt><dd>${residentSnippet(c.block, c.unit)}</dd>
       <dt>投訴人</dt><dd>${esc(c.complainant) || '—'} ${c.complainantContact ? '· ' + esc(c.complainantContact) : ''}</dd>
       <dt>對方</dt><dd>${esc(c.respondent) || '—'} ${c.respondentContact ? '· ' + esc(c.respondentContact) : ''}</dd>
       ${k ? `<dt>承辦商</dt><dd><a href="#/contractors/${k.id}">${esc(k.name)}</a></dd>` : ''}
@@ -415,7 +416,8 @@
       <div class="card"><h3>事實摘要（可以直接放入信）</h3><p class="small">${late.length ? `合約訂明 ${k.slaDays} 日內完成。以下 ${late.length} 宗工單超出限期：<br>${late.map((o) => `・${fmtDate(o.issuedAt)} 發出「${esc(o.desc)}」，限期 ${fmtDate(o.dueAt)}，${o.doneAt ? `於 ${fmtDate(o.doneAt)} 完成（遲 ${daysBetween(o.dueAt, o.doneAt)} 日）` : `至今未完成（已超 ${daysBetween(o.dueAt, t)} 日）`}`).join('<br>')}` : '暫時冇超時工單。'}</p><p class="tiny muted">呢段係事實，冇形容詞。「你哋成日走數」係推論；「三單入面兩單超時」係事實。</p></div></div>
       <div class="card"><div class="card-head"><h3>工單（${k.orders.length}）</h3><button class="btn primary small" id="addWo">新工單</button></div>
       ${orders.length ? `<div class="table-wrap"><table><thead><tr><th>發出</th><th>內容</th><th>限期</th><th>完成</th><th>狀態</th><th></th></tr></thead><tbody>${orders.map((o) => { const isLate = o.dueAt && ((o.doneAt && o.doneAt > o.dueAt) || (!o.doneAt && o.dueAt < t)); return `<tr><td>${fmtDate(o.issuedAt)}</td><td>${esc(o.desc)}</td><td>${fmtDate(o.dueAt)}</td><td>${fmtDate(o.doneAt)}</td><td>${o.status === 'done' ? `<span class="tag ${isLate ? 'warn' : 'ok'}">${isLate ? '遲完成' : '完成'}</span>` : isLate ? '<span class="tag danger">超時</span>' : '<span class="tag accent">進行中</span>'}</td><td class="btn-row">${o.status !== 'done' ? `<button class="btn small" data-done="${o.id}">完成</button>` : ''}<button class="btn small ghost" data-delwo="${o.id}">刪</button></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">未有工單</div>'}</div>
-      ${cases.length ? `<div class="card"><h3>相關個案</h3><div class="list">${cases.map(caseItem).join('')}</div></div>` : ''}`;
+      ${cases.length ? `<div class="card"><h3>相關個案</h3><div class="list">${cases.map(caseItem).join('')}</div></div>` : ''}
+      ${(() => { const ws = S.works.filter((w) => w.contractor === k.name); return ws.length ? `<div class="card"><h3>工程項目（${ws.length}）</h3><div class="table-wrap"><table><thead><tr><th>單位</th><th>工程</th><th>狀態</th><th>出標／截標</th><th>完工</th></tr></thead><tbody>${ws.map((w) => `<tr class="clickable" data-href="#/works/${w.id}"><td class="mono">${esc(w.unitCode)}</td><td>${esc(w.title)}</td><td><span class="tag ${w.status === '完工' ? 'ok' : 'accent'}">${esc(w.status)}</span></td><td class="small">${fmtDate(w.tenderOut)} / ${fmtDate(w.tenderClose)}</td><td class="small">${fmtDate(w.doneAt)}</td></tr>`).join('')}</tbody></table></div></div>` : ''; })()}`;
     $('#editCon').onclick = () => contractorForm(k);
     $('#delCon').onclick = () => confirmDialog('刪除呢個承辦商同全部工單？', () => { S.contractors = S.contractors.filter((x) => x.id !== k.id); save(); location.hash = '#/contractors'; });
     $('#mkCase').onclick = () => caseForm(null, { title: `${k.name}：工單超時`, type: 'contractor', respondent: k.name, respondentContact: k.phone, contractorId: k.id, complainant: '本處' });
@@ -618,7 +620,7 @@
       <div class="row"><div><label>信件編號前綴</label><input name="letterRefPrefix" value="${esc(st.letterRefPrefix)}" placeholder="FUSN/26/L"></div><div><label>下一個信件編號</label><input type="number" name="letterSeq" value="${st.letterSeq}" min="1"></div><div><label>個案編號前綴</label><input name="caseRefPrefix" value="${esc(st.caseRefPrefix)}" placeholder="FUS26-"></div><div><label>下一個個案編號</label><input type="number" name="caseSeq" value="${S.seq}" min="1"></div></div>
       <div class="btn-row"><button class="btn primary" type="submit">儲存</button><button class="btn" type="button" id="presetBtn">套用富善邨預設</button></div></form><p class="tiny muted" style="margin-top:8px">${esc(R.LICENCE_NOTE)}</p></div>
       <div><div class="card"><h3>備份</h3><p class="small">資料只儲存喺呢部機呢個瀏覽器嘅 localStorage。清除瀏覽紀錄、換機、換瀏覽器都會冇。<strong>每星期匯出一次。</strong></p><div class="btn-row"><button class="btn primary" id="exportBtn">匯出 JSON</button><label class="btn">匯入 JSON<input type="file" id="importFile" accept="application/json" hidden></label><button class="btn" id="importPaste">貼上 JSON 匯入</button><button class="btn" id="exportCsv">匯出個案 CSV</button><a class="btn" href="#/import">匯入 Excel（投訴登記表、工程項目、信件紀錄、雜物表）</a></div><p class="tiny muted" style="margin-top:8px">匯出檔案包含住戶個人資料（第486章）。存喺公司指定位置，唔好放個人雲端或者傳出去。</p></div>
-      <div class="card"><h3>統計</h3><dl class="kv"><dt>個案</dt><dd>${S.cases.length}（未結案 ${S.cases.filter(isOpen).length}）</dd><dt>承辦商</dt><dd>${S.contractors.length}</dd><dt>巡查紀錄</dt><dd>${S.inspections.length}</dd><dt>信件</dt><dd>${S.letters.length}</dd><dt>工程項目</dt><dd>${S.works.length}</dd><dt>樓層雜物</dt><dd>${S.debris.length}</dd></dl></div>
+      <div class="card"><h3>統計</h3><dl class="kv"><dt>個案</dt><dd>${S.cases.length}（未結案 ${S.cases.filter(isOpen).length}）</dd><dt>承辦商</dt><dd>${S.contractors.length}</dd><dt>巡查紀錄</dt><dd>${S.inspections.length}</dd><dt>信件</dt><dd>${S.letters.length}</dd><dt>工程項目</dt><dd>${S.works.length}</dd><dt>樓層雜物</dt><dd>${S.debris.length}</dd><dt>住戶登記</dt><dd>${S.residents.length} 個單位</dd></dl></div>
       <div class="card"><h3>危險區</h3><div class="btn-row"><button class="btn" id="demoBtn">載入示範資料</button><button class="btn danger" id="wipeBtn">清除全部資料</button></div></div></div></div>`;
     $('#setForm').onsubmit = (e) => {
       e.preventDefault(); const d = formData(e.target);
@@ -759,7 +761,7 @@
       ${w.care ? `<div class="banner warn"><strong>關顧提示：${esc(w.care)}</strong>約期、開工前多打一次電話；有需要轉介支援。</div>` : ''}
       ${w.tenderClose && w.tenderClose < t && !w.contractor && w.status !== '完工' ? `<div class="banner warn"><strong>截標已過（${fmtDate(w.tenderClose)}），未定承辦商</strong>報價分析做咗未？下一步係報價經理批核定法團投票？</div>` : ''}
       <div class="grid cols-2"><div><div class="card"><h3>流程</h3><div class="ladder">${R.WORK_STATUSES.filter((x) => x !== 'outstanding').map((st, i) => `<div class="rung ${st === w.status ? 'current' : ''}" style="${i < cur ? 'opacity:.6' : ''}"><div class="lvl">${i + 1}</div><div><strong>${esc(st)}</strong>${st === w.status ? ' <span class="tag accent">現時</span>' : ''}</div><div style="margin-left:auto">${st !== w.status ? `<button class="btn small ghost" data-setst="${esc(st)}">設為此步</button>` : ''}</div></div>`).join('')}</div><p class="tiny muted" style="margin-top:8px">「處理中」表嘅狀態次序。改狀態會記入紀錄。</p></div></div>
-      <div><div class="card"><h3>資料</h3><dl class="kv"><dt>樓／單位</dt><dd>${esc(w.block)} ${esc(w.unit)} ${w.wing ? esc(w.wing) : ''}</dd><dt>座主</dt><dd>${esc(w.owner) || '—'}</dd><dt>承辦商</dt><dd>${k ? `<a href="#/contractors/${k.id}">${esc(w.contractor)}</a>` : esc(w.contractor) || '—'}</dd><dt>事發</dt><dd>${fmtDate(w.eventDate)}</dd><dt>出標／截標</dt><dd>${fmtDate(w.tenderOut)} / ${fmtDate(w.tenderClose)}</dd><dt>過會</dt><dd>${fmtDate(w.meetingDate)} ${w.agenda ? '· ' + esc(w.agenda) : ''}</dd><dt>完工</dt><dd>${fmtDate(w.doneAt)}</dd><dt>中標金額</dt><dd>${esc(w.amount) || '—'}</dd><dt>住戶</dt><dd>${esc(w.resident)} ${esc(w.phone)}</dd><dt>投訴</dt><dd>${w.complaintCount || 0} 宗 ${w.firstCaseRef ? '· 首宗 ' + (linkedCase ? `<a href="#/case/${linkedCase.id}">${esc(w.firstCaseRef)}</a>` : esc(w.firstCaseRef)) : ''}</dd></dl>${w.note ? `<p class="small" style="margin-top:8px;white-space:pre-wrap">${esc(w.note)}</p>` : ''}</div>
+      <div><div class="card"><h3>資料</h3><dl class="kv"><dt>樓／單位</dt><dd>${esc(w.block)} ${esc(w.unit)} ${w.wing ? esc(w.wing) : ''} <a class="small" href="#/unit/${encodeURIComponent(w.unitCode)}">單位紀錄</a></dd><dt>住戶登記</dt><dd>${residentSnippet(w.block, w.unit)}</dd><dt>座主</dt><dd>${esc(w.owner) || '—'}</dd><dt>承辦商</dt><dd>${k ? `<a href="#/contractors/${k.id}">${esc(w.contractor)}</a>` : esc(w.contractor) || '—'}</dd><dt>事發</dt><dd>${fmtDate(w.eventDate)}</dd><dt>出標／截標</dt><dd>${fmtDate(w.tenderOut)} / ${fmtDate(w.tenderClose)}</dd><dt>過會</dt><dd>${fmtDate(w.meetingDate)} ${w.agenda ? '· ' + esc(w.agenda) : ''}</dd><dt>完工</dt><dd>${fmtDate(w.doneAt)}</dd><dt>中標金額</dt><dd>${esc(w.amount) || '—'}</dd><dt>住戶</dt><dd>${esc(w.resident)} ${esc(w.phone)}</dd><dt>投訴</dt><dd>${w.complaintCount || 0} 宗 ${w.firstCaseRef ? '· 首宗 ' + (linkedCase ? `<a href="#/case/${linkedCase.id}">${esc(w.firstCaseRef)}</a>` : esc(w.firstCaseRef)) : ''}</dd></dl>${w.note ? `<p class="small" style="margin-top:8px;white-space:pre-wrap">${esc(w.note)}</p>` : ''}</div>
       <div class="card"><div class="card-head"><h3>紀錄（${(w.log || []).length}）</h3><button class="btn small primary" id="addWlog">記一筆</button></div>${(w.log || []).length ? `<ul class="timeline">${w.log.slice().reverse().map((l) => `<li><div class="when">${esc(l.at)}</div><div class="what">${esc(l.text)}</div></li>`).join('')}</ul>` : '<div class="empty">未有紀錄</div>'}</div></div></div>`;
     $('#editWork').onclick = () => workForm(w);
     $('#delWork').onclick = () => confirmDialog('刪除呢個工程項目？', () => { S.works = S.works.filter((x) => x.id !== w.id); save(); location.hash = '#/works'; });
@@ -791,7 +793,7 @@
       <div class="filters"><input id="dq" placeholder="搜尋單位、物品…" value="${esc(f.q)}"><select id="db"><option value="">全部座</option>${S.settings.blocks.map((b) => `<option value="${esc(b.name)}" ${b.name === f.block ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select><select id="ds"><option value="">全部狀態</option>${R.DEBRIS_STATUSES.map((x) => `<option ${x === f.status ? 'selected' : ''}>${x}</option>`).join('')}</select><label class="check"><input type="checkbox" id="dopen" ${f.open ? 'checked' : ''}> 只顯示未清理</label></div>
       <div class="btn-row no-print" style="margin-bottom:10px"><button class="btn small" id="batchLetters" disabled>批量出信（已選 0）</button><span class="tiny muted">剔選左邊方格，可以一次過為多個單位生成雜物信、自動編號同列印。</span></div>
       ${list.length ? `<div class="table-wrap"><table><thead><tr><th></th><th>單位</th><th>樓層／翼</th><th>發現</th><th>物品</th><th>相</th><th>走火通道</th><th>第一次信</th><th>第二次信</th><th>狀態</th><th>同事</th><th></th></tr></thead><tbody>${list.map((d) => `<tr><td><input type="checkbox" data-sel="${d.id}" ${debrisBatch.includes(d.id) ? 'checked' : ''}></td><td class="mono"><strong>${esc(debrisCode(d))}</strong>${d.care ? `<br><span class="tag warn">${esc(d.care)}</span>` : ''}</td><td class="small">${esc(d.floor)} ${esc(d.wing)}</td><td class="small">${fmtDate(d.date)}</td><td>${esc(d.items)}${d.note ? `<div class="tiny muted">${esc(d.note)}</div>` : ''}</td><td>${d.photoCount ? `<button class="btn small ghost" data-photos="${d.id}">${d.photoCount} 張</button>` : '<span class="muted tiny">—</span>'}</td><td>${d.escape ? '<span class="tag danger">阻礙</span>' : '<span class="tag">否</span>'}</td><td class="small">${d.letter1At ? `${fmtDate(d.letter1At)}<br><span class="mono tiny">${esc(d.letter1Ref)}</span>` : '—'}</td><td class="small">${d.letter2At ? `${fmtDate(d.letter2At)}<br><span class="mono tiny">${esc(d.letter2Ref)}</span>` : '—'}</td><td><span class="tag ${['已清理', '當垃圾處理'].includes(d.status) ? 'ok' : d.status === '已發現' ? 'warn' : 'accent'}">${esc(d.status)}</span></td><td class="small">${esc(d.officer)}</td><td class="btn-row" style="flex-wrap:nowrap">${!['已清理', '當垃圾處理'].includes(d.status) ? `<a class="btn small" href="#/letters/d/${d.id}">${d.letter1At ? '第二次信' : '出信'}</a><button class="btn small" data-clear="${d.id}">已清理</button>` : ''}${d.letter1Ref && canDocx ? `<button class="btn small ghost" data-docx="${d.id}" title="用已記錄嘅編號同日期重新生成 Word">Word</button>` : ''}<button class="btn small ghost" data-edit="${d.id}">編輯</button></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">冇紀錄</div>'}`;
-    const derive = () => { const block = $('#qBlock').value; const unit = $('#qUnit').value.trim(); const el = $('#qDerived'); if (!unit) { el.textContent = '輸入單位後會顯示：樓層、翼、第幾次通知、信件編號'; return; } const fw = deriveFloorWing(block, unit); const open = findOpenDebris(block, unit); const n = open && open.letter1At ? 2 : 1; el.innerHTML = `<strong>${esc(blockCode(block))}${esc(unit)}</strong> → ${esc(fw.floor || '？樓')} ${esc(fw.wing || '（翼未能判斷）')} · ${n === 2 ? `第二次通知（第一次信 ${fmtDate(open.letter1At)} ${esc(open.letter1Ref)}）` : '第一次通知'} · 編號 <span class="mono">${esc(nextLetterRef())}</span> · 日期 ${cnDate(today())}${fw.warn ? ` · <span class="tag warn">${esc(fw.warn)}</span>` : ''}`; };
+    const derive = () => { const block = $('#qBlock').value; const unit = $('#qUnit').value.trim(); const el = $('#qDerived'); if (!unit) { el.textContent = '輸入單位後會顯示：樓層、翼、第幾次通知、信件編號'; return; } const fw = deriveFloorWing(block, unit); const open = findOpenDebris(block, unit); const n = open && open.letter1At ? 2 : 1; const rr = residentFor(block, unit); el.innerHTML = `<strong>${esc(blockCode(block))}${esc(unit)}</strong> → ${esc(fw.floor || '？樓')} ${esc(fw.wing || '（翼未能判斷）')}${rr ? ' · ' + residentBadges(rr) + (rr.people[0] && rr.people[0].name ? ' ' + esc(rr.people[0].name) : '') : ''} · ${n === 2 ? `第二次通知（第一次信 ${fmtDate(open.letter1At)} ${esc(open.letter1Ref)}）` : '第一次通知'} · 編號 <span class="mono">${esc(nextLetterRef())}</span> · 日期 ${cnDate(today())}${fw.warn ? ` · <span class="tag warn">${esc(fw.warn)}</span>` : ''}`; };
     $('#qUnit').oninput = derive; $('#qBlock').onchange = derive;
     const quickSubmit = async (makeDocx) => {
       const fd = formData($('#quickForm')); const unit = fd.unit.trim(); if (!unit) return toast('先輸入單位');
@@ -877,20 +879,38 @@
     return '';
   }
   const norm = (h) => String(h || '').replace(/\s+/g, '').replace(/[（(].*?[）)]/g, '').toLowerCase();
+  const normKeep = (h) => String(h || '').replace(/\s+/g, '').replace(/（/g, '(').replace(/）/g, ')').toLowerCase();
   const IMPORT_KINDS = {
     cases: { label: '投訴登記表 → 個案', need: ['個案編號', '反映個案'], map: { date: ['日期'], ref: ['個案編號'], block: ['座數', '個案編號2', '樓'], unit: ['提出投訴單位', '單位'], officer: ['負責同事'], title: ['反映個案', '工程內容'], channel: ['投訴方式'], f1d: ['第一次跟進日期'], f1: ['第一次跟進進度'], f2d: ['第二次跟進日期'], f2: ['第二次跟進進度'], f3d: ['第三次跟進日期'], f3: ['第三次跟進進度'], done: ['已完成個案'], resident: ['住戶身份'], phone: ['登記電話', '聯絡電話'], care: ['關顧提示'], wing: ['翼'] } },
     works: { label: '工程項目／工程進度／處理中 → 工程項目', need: ['工程項目|工程內容', '出標日期|報價單|截標日期'], map: { seqNo: ['編號'], eventDate: ['事發日期', '日期'], meetingDate: ['過會日期', '過會'], unitCode: ['單位代號'], block: ['樓'], unit: ['單位'], title: ['工程項目', '工程內容'], tenderOut: ['出標日期', '報價單'], tenderClose: ['截標日期'], doneAt: ['完工日期'], doneStatus: ['完工狀態'], category: ['工程類別', '工程'], owner: ['座主', '現時跟進'], contractor: ['承辦商'], status: ['=狀態'], resident: ['住戶身份', '住戶'], phone: ['登記電話', '電話'], care: ['關顧提示'], complaintCount: ['投訴宗數'], firstCaseRef: ['首宗投訴編號', '相關投訴編號'], wing: ['翼'], amount: ['中標金額'], agenda: ['議程', '會議'], note: ['備註'] } },
     letters: { label: '屋苑信件紀錄 → 信件紀錄', need: ['編號', '發件人', '收件人'], map: { ref: ['編號'], date: ['日期'], subject: ['內容'], sender: ['發件人'], recipient: ['收件人'] } },
     debris: { label: '樓層雜物表 → 樓層雜物', need: ['物品', '是否阻礙走火通道'], map: { date: ['發現日期'], block: ['樓'], floor: ['樓層'], wing: ['翼'], unit: ['單位'], unitCode: ['單位代號'], items: ['物品'], escape: ['是否阻礙走火通道'], photo: ['相片'], letter1At: ['第一次通知日期'], letter1Ref: ['第一次通知信件編號'], letter2At: ['第二次通知日期'], letter2Ref: ['第二次通知信件編號'], clearedAt: ['清理'], status: ['狀態'], officer: ['跟進同事'], care: ['關顧提示'], caseRef: ['相關投訴編號'], note: ['備註'] } },
+    residents: { label: '住戶登記表 → 住戶', need: ['=業住', '=租戶', '=姓名(1)'], map: { block: ['=樓'], unit: ['=單位'], owner: ['=業住'], tenant: ['=租戶'], elderly: ['65歲以上', '65歲'], retired: ['退休人士', '退休'], alone: ['獨居人士', '獨居'], name1: ['=姓名(1)'], phone1: ['=電話(1)'], name2: ['=姓名(2)'], phone2: ['=電話(2)'], em1: ['=緊急聯絡人(1)'], emPhone1: ['=緊急聯絡電話(1)'], em2: ['=緊急聯絡人(2)'], emPhone2: ['=緊急聯絡電話(2)'], note: ['=備註'], care: ['=關顧提示'], identity: ['=住戶身份'] } },
     contractors: { label: '供應商名單 → 承辦商', need: ['vendor', 'contactperson'], map: { code: ['setid'], nameEn: ['vendor'], name: ['name'], email: ['email'], phone: ['phone'], category: ['descr'], grade: ['grade'], contact: ['contactperson'] } },
   };
-  function headerIndex(headers, keys) { const H = headers.map(norm); for (const k of keys) { const exact = k.startsWith('='); const nk = norm(exact ? k.slice(1) : k); let i = H.findIndex((h) => h === nk); if (!exact && i < 0) i = H.findIndex((h) => h.startsWith(nk)); if (!exact && i < 0) i = H.findIndex((h) => h.includes(nk)); if (i >= 0) return i; } return -1; }
+  function headerIndex(headers, keys) { const H = headers.map(norm); const HK = headers.map(normKeep); for (const k of keys) { const exact = k.startsWith('='); const nk = exact ? normKeep(k.slice(1)) : norm(k); let i = exact ? HK.findIndex((h) => h === nk) : H.findIndex((h) => h === nk); if (!exact && i < 0) i = H.findIndex((h) => h.startsWith(nk)); if (!exact && i < 0) i = H.findIndex((h) => h.includes(nk)); if (i >= 0) return i; } return -1; }
   function detectKind(headers) { let best = null, bestScore = 0; Object.entries(IMPORT_KINDS).forEach(([k, def]) => { const score = def.need.filter((n) => n.split('|').some((alt) => headerIndex(headers, [alt]) >= 0)).length; if (score === def.need.length && score > bestScore) { best = k; bestScore = score; } }); return best; }
   function normWorkStatus(txt) { const v = String(txt || '').replace(/[↓\s]/g, ''); if (!v) return ''; if (R.WORK_STATUSES.includes(v)) return v; if (/^約期|工程中|預定/.test(v)) return '約期/工程中'; if (/報價分析|批核/.test(v)) return '報價經理批核中'; if (/完工|完成/.test(v)) return '完工'; if (/未過會|投票/.test(v)) return '法團投票中'; if (/商議/.test(v)) return '法團商議中'; if (/追認/.test(v)) return '上會追認'; const hit = R.WORK_STATUSES.find((st) => v.startsWith(st)); return hit || ''; }
-  function importRows(kind, headers, rows) {
+  function importRows(kind, headers, rows, sheetName) {
     const def = IMPORT_KINDS[kind]; const idx = {}; Object.entries(def.map).forEach(([f, keys]) => { idx[f] = headerIndex(headers, keys); });
     const get = (r, f) => (idx[f] >= 0 ? r[idx[f]] : ''); const gs = (r, f) => String(get(r, f) == null ? '' : get(r, f)).trim();
-    const out = { added: 0, skipped: 0, updated: 0 };
+    const out = { added: 0, skipped: 0, updated: 0, contractorsAdded: 0, linked: 0 };
+    if (kind === 'residents') {
+      const P = (v) => /^(p|y|yes|是|✓|v|1)$/i.test(String(v == null ? '' : v).trim());
+      const sheetBlock = (S.settings.blocks.find((b) => sheetName && (sheetName.startsWith(b.name) || b.name.startsWith(sheetName))) || {}).name || '';
+      const now = today();
+      rows.forEach((r) => {
+        const unitRaw = gs(r, 'unit'); if (!unitRaw || !/\d/.test(unitRaw) || unitRaw === '單位') return out.skipped++;
+        let block = gs(r, 'block') || sheetBlock; if (!block) return out.skipped++;
+        const unit = normUnit(unitRaw);
+        const rec = { key: `${block}${unit}`, block, unit, owner: P(get(r, 'owner')), tenant: P(get(r, 'tenant')), elderly: P(get(r, 'elderly')), retired: P(get(r, 'retired')), alone: P(get(r, 'alone')), people: [{ name: gs(r, 'name1'), phone: gs(r, 'phone1') }, { name: gs(r, 'name2'), phone: gs(r, 'phone2') }], emergency: [{ name: gs(r, 'em1'), phone: gs(r, 'emPhone1') }, { name: gs(r, 'em2'), phone: gs(r, 'emPhone2') }], note: gs(r, 'note'), care: gs(r, 'care'), identity: gs(r, 'identity'), updatedAt: now };
+        const hasData = rec.owner || rec.tenant || rec.people.some((p) => p.name || p.phone) || rec.emergency.some((p) => p.name || p.phone) || rec.note;
+        const i = S.residents.findIndex((x) => x.key === rec.key);
+        if (!hasData) { if (i >= 0) { S.residents.splice(i, 1); out.updated++; } else out.skipped++; return; }
+        if (i >= 0) { S.residents[i] = rec; out.updated++; } else { S.residents.push(rec); out.added++; }
+      });
+      return out;
+    }
     if (kind === 'letters') {
       const dateIdx = idx.date; const refCols = dateIdx > 1 ? headers.slice(0, dateIdx).map((_, i) => i) : [idx.ref];
       let maxSeq = 0;
@@ -924,13 +944,15 @@
         if (!unitCode && block && !unit && /^[A-Za-z]{2}/.test(block)) { const pu = parseUnitCode(block); block = pu.block; unit = pu.unit; unitCode = unitCodeOf(block, unit); }
         if (unitCode && !block) { const pu = parseUnitCode(unitCode); block = pu.block; unit = pu.unit; }
         if (!unitCode) unitCode = unitCodeOf(block, unit);
+        const kc = contractorUpsert(gs(r, 'contractor')); if (kc && kc._new) { delete kc._new; out.contractorsAdded++; }
         if (S.works.some((w) => w.unitCode === unitCode && w.title === title)) return out.skipped++;
         const doneRaw = get(r, 'doneAt'); const doneAt = toISO(doneRaw); const doneText = doneAt ? '' : String(doneRaw || '').trim();
         let status = normWorkStatus(gs(r, 'status')) || section || normWorkStatus(gs(r, 'doneStatus')) || normWorkStatus(doneText);
         if (!status) status = doneAt ? '完工' : /未過會/.test(gs(r, 'contractor')) ? '法團投票中' : /約期/.test(gs(r, 'contractor')) ? '約期/工程中' : gs(r, 'meetingDate') ? '上會追認' : gs(r, 'tenderClose') ? '報價已發出' : '進行中';
         if (doneAt) status = '完工';
         const cat = gs(r, 'category'); const category = R.WORK_CATEGORIES.includes(cat) ? cat : (cat ? '其他' : '其他');
-        S.works.push(newWork({ seqNo: Number(gs(r, 'seqNo')) || S.works.length + 1, eventDate: toISO(get(r, 'eventDate')), meetingDate: toISO(get(r, 'meetingDate')), unitCode, block, unit, wing: gs(r, 'wing'), title, tenderOut: toISO(get(r, 'tenderOut')), tenderClose: toISO(get(r, 'tenderClose')), doneAt, status, category, owner: gs(r, 'owner'), contractor: gs(r, 'contractor').replace(/約期中$/, ''), amount: gs(r, 'amount'), agenda: gs(r, 'agenda'), complaintCount: Number(gs(r, 'complaintCount')) || 0, firstCaseRef: gs(r, 'firstCaseRef'), resident: gs(r, 'resident'), phone: gs(r, 'phone'), care: gs(r, 'care'), note: [doneText, gs(r, 'doneStatus'), gs(r, 'note')].filter(Boolean).join('\n') }));
+        const refCase = gs(r, 'firstCaseRef') ? S.cases.find((c) => c.ref === gs(r, 'firstCaseRef')) : null; if (refCase) out.linked++;
+        S.works.push(newWork({ caseId: refCase ? refCase.id : '', seqNo: Number(gs(r, 'seqNo')) || S.works.length + 1, eventDate: toISO(get(r, 'eventDate')), meetingDate: toISO(get(r, 'meetingDate')), unitCode, block, unit, wing: gs(r, 'wing'), title, tenderOut: toISO(get(r, 'tenderOut')), tenderClose: toISO(get(r, 'tenderClose')), doneAt, status, category, owner: gs(r, 'owner'), contractor: kc ? kc.name : gs(r, 'contractor').replace(/約期中$/, ''), amount: gs(r, 'amount'), agenda: gs(r, 'agenda'), complaintCount: Number(gs(r, 'complaintCount')) || 0, firstCaseRef: gs(r, 'firstCaseRef'), resident: gs(r, 'resident'), phone: gs(r, 'phone'), care: gs(r, 'care'), note: [doneText, gs(r, 'doneStatus'), gs(r, 'note')].filter(Boolean).join('\n') }));
         out.added++;
       });
       return out;
@@ -951,21 +973,32 @@
       ${hasXLSX ? '' : '<div class="banner danger"><strong>讀 Excel 嘅元件（vendor/xlsx.full.min.js）未載入</strong>請用完整版本檔案，或者先另存做 CSV。</div>'}
       <div class="card"><div class="row"><div><label>揀檔案</label><input type="file" id="impFile" accept=".xlsx,.xls,.xlsm,.csv" ${hasXLSX ? '' : 'disabled'}></div><div id="impSheetWrap" class="hidden"><label>工作表</label><select id="impSheet"></select></div><div id="impKindWrap" class="hidden"><label>當作</label><select id="impKind">${Object.entries(IMPORT_KINDS).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('')}</select></div></div><div id="impPreview"></div></div>`;
     let wb = null; let headers = []; let rows = [];
+    const sheetData = (name) => { const all = window.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' }); const hi = all.findIndex((r) => r.filter((v) => v !== '' && v != null).length >= 3); if (hi < 0) return { headers: null, rows: [] }; return { headers: all[hi].map((h) => String(h == null ? '' : h)), rows: all.slice(hi + 1).filter((r) => r.some((v) => v !== '' && v != null)) }; };
+    const sheetHeaders = (name) => sheetData(name).headers || [];
     const analyse = () => {
-      const name = $('#impSheet').value; const ws = wb.Sheets[name];
-      const all = window.XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
-      const hi = all.findIndex((r) => r.filter((v) => v !== '' && v != null).length >= 3); if (hi < 0) { $('#impPreview').innerHTML = '<div class="empty">呢個工作表冇資料</div>'; return; }
-      headers = all[hi].map((h) => String(h == null ? '' : h)); rows = all.slice(hi + 1).filter((r) => r.some((v) => v !== '' && v != null));
+      const name = $('#impSheet').value; const sd = sheetData(name);
+      if (!sd.headers) { $('#impPreview').innerHTML = '<div class="empty">呢個工作表冇資料</div>'; return; }
+      headers = sd.headers; rows = sd.rows;
       const kind = detectKind(headers); $('#impKindWrap').classList.remove('hidden'); if (kind) $('#impKind').value = kind;
       renderPreview();
     };
     const renderPreview = () => {
       const kind = $('#impKind').value; const def = IMPORT_KINDS[kind];
       const mapped = Object.entries(def.map).map(([f, keys]) => { const i = headerIndex(headers, keys); return `<span class="tag ${i >= 0 ? 'ok' : ''}">${esc(keys[0])}${i >= 0 ? ' ← ' + esc(headers[i]).slice(0, 14) : ' ✗'}</span>`; }).join(' ');
-      $('#impPreview').innerHTML = `<h4 style="margin-top:12px">${esc(def.label)} · 共 ${rows.length} 行</h4><div style="margin-bottom:8px;line-height:2">${mapped}</div><div class="table-wrap"><table><thead><tr>${headers.slice(0, 10).map((h) => `<th>${esc(h).slice(0, 16)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 5).map((r) => `<tr>${r.slice(0, 10).map((v) => `<td class="small">${esc(v instanceof Date ? isoDate(v) : String(v == null ? '' : v)).slice(0, 30)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="btn-row" style="margin-top:10px"><button class="btn primary" id="impGo">匯入</button><span class="tiny muted">已有相同編號／單位嘅唔會重複加入。匯入前建議先匯出備份。</span></div>`;
-      $('#impGo').onclick = () => { const out = importRows(kind, headers, rows); save(); toast(`已匯入 ${out.added} 筆，跳過 ${out.skipped} 筆`); $('#impPreview').innerHTML += `<div class="banner ok" style="margin-top:10px"><strong>完成</strong>加入 ${out.added} 筆，跳過 ${out.skipped} 筆（重複或者空行）。<a href="#/${kind === 'cases' ? 'cases' : kind === 'works' ? 'works' : kind === 'letters' ? 'register' : kind === 'debris' ? 'debris' : 'contractors'}">去睇</a></div>`; };
+      const others = wb.SheetNames.filter((n) => n !== $('#impSheet').value && detectKind(sheetHeaders(n)) === kind);
+      $('#impPreview').innerHTML = `<h4 style="margin-top:12px">${esc(def.label)} · 共 ${rows.length} 行</h4>${others.length ? `<label class="check" style="margin-bottom:8px"><input type="checkbox" id="impAll" ${kind === 'residents' ? 'checked' : ''}> 一併匯入同類型嘅其他工作表：${others.map(esc).join('、')}</label>` : ''}<div style="margin-bottom:8px;line-height:2">${mapped}</div><div class="table-wrap"><table><thead><tr>${headers.slice(0, 10).map((h) => `<th>${esc(h).slice(0, 16)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 5).map((r) => `<tr>${r.slice(0, 10).map((v) => `<td class="small">${esc(v instanceof Date ? isoDate(v) : String(v == null ? '' : v)).slice(0, 30)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="btn-row" style="margin-top:10px"><button class="btn primary" id="impGo">匯入</button><span class="tiny muted">已有相同編號／單位嘅唔會重複加入。匯入前建議先匯出備份。</span></div>`;
+      $('#impGo').onclick = () => {
+        const all = $('#impAll') && $('#impAll').checked; const sheets = all ? [$('#impSheet').value].concat(others) : [$('#impSheet').value];
+        const tot = { added: 0, skipped: 0, updated: 0, contractorsAdded: 0, linked: 0 };
+        sheets.forEach((n) => { const { headers: h, rows: rs } = sheetData(n); if (!h) return; const out = importRows(kind, h, rs, n); Object.keys(tot).forEach((k) => { tot[k] += out[k] || 0; }); });
+        save(); toast(`已匯入 ${tot.added} 筆`);
+        const extra = [tot.updated ? `更新 ${tot.updated} 筆` : '', tot.contractorsAdded ? `新增承辦商 ${tot.contractorsAdded} 間` : '', tot.linked ? `連結個案 ${tot.linked} 宗` : ''].filter(Boolean).join('，');
+        $('#impPreview').innerHTML += `<div class="banner ok" style="margin-top:10px"><strong>完成</strong>加入 ${tot.added} 筆，跳過 ${tot.skipped} 筆（重複或者空行）${extra ? '，' + extra : ''}。<a href="#/${kind === 'cases' ? 'cases' : kind === 'works' ? 'works' : kind === 'letters' ? 'register' : kind === 'debris' ? 'debris' : kind === 'residents' ? 'unit' : 'contractors'}">去睇</a></div>`;
+      };
     };
-    $('#impFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { wb = window.XLSX.read(new Uint8Array(rd.result), { type: 'array', cellDates: true }); } catch (err) { toast('讀唔到檔案：' + err.message); return; } const sel = $('#impSheet'); sel.innerHTML = wb.SheetNames.map((n) => `<option>${esc(n)}</option>`).join(''); $('#impSheetWrap').classList.remove('hidden'); const pref = wb.SheetNames.find((n) => /工程項目|投訴|LETTER|雜物|處理中|工程進度/.test(n)); if (pref) sel.value = pref; analyse(); }; rd.readAsArrayBuffer(f); };
+    const loaded = () => { const sel = $('#impSheet'); sel.innerHTML = wb.SheetNames.map((n) => `<option>${esc(n)}</option>`).join(''); $('#impSheetWrap').classList.remove('hidden'); const pref = wb.SheetNames.find((n) => /工程項目|投訴|LETTER|雜物|處理中|工程進度/.test(n)); if (pref) sel.value = pref; analyse(); };
+    const askPassword = (buf) => { openModal(`<h2>呢個 Excel 有密碼</h2><form id="pwForm"><div class="row full"><div><label>密碼</label><input type="password" name="pw" autocomplete="off"></div></div><p class="tiny muted">解密喺你部機入面進行，密碼唔會傳去任何地方。大約要幾秒。</p><div class="btn-row"><button class="btn primary" type="submit">解密</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`); $('#mCancel').onclick = closeModal; $('#pwForm').onsubmit = async (e) => { e.preventDefault(); const pw = formData(e.target).pw; closeModal(); toast('解密中…'); try { if (!window.OfficeDecrypt) throw new Error('未載入解密元件'); const plain = await window.OfficeDecrypt.decrypt(buf, pw, window.XLSX.CFB, (p) => { const t = $('#toast'); if (t) t.textContent = `解密中… ${Math.round(p * 100)}%`; }); wb = window.XLSX.read(new Uint8Array(plain), { type: 'array', cellDates: true }); toast('已解密'); loaded(); } catch (err) { toast(err.message === '密碼唔啱' ? '密碼唔啱，再試' : '解密失敗：' + err.message); if (err.message === '密碼唔啱') askPassword(buf); } }; };
+    $('#impFile').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { wb = window.XLSX.read(new Uint8Array(rd.result), { type: 'array', cellDates: true }); } catch (err) { if (/password/i.test(err.message)) { askPassword(rd.result); return; } toast('讀唔到檔案：' + err.message); return; } loaded(); }; rd.readAsArrayBuffer(f); };
     $('#impSheet').onchange = analyse;
     $('#impKind').onchange = renderPreview;
   };
@@ -1096,14 +1129,76 @@
     return `<div class="card"><div class="card-head"><h3>樓層巡查</h3><a href="#/rounds" class="small">剔格表</a></div><div class="item" data-href="#/rounds"><div class="body"><div class="title">${due.length} 座超過七日未有巡查紀錄</div><div class="meta"><span>${due.map((b) => esc(b.name) + (lastByBlock[b.name] ? `（${daysBetween(lastByBlock[b.name], t)} 日）` : '（未有）')).join('、')}</span></div></div></div></div>`;
   }
 
+
+  // ---------- 住戶登記 ----------
+  const normUnit = (u) => { const s = String(u == null ? '' : u).trim(); return /^\d+$/.test(s) ? String(Number(s)) : s; };
+  const residentFor = (block, unit) => S.residents.find((r) => r.block === block && r.unit === normUnit(unit)) || null;
+  // 「SK707」「善群樓707」「善群 707」「善群樓 7樓 707」→ {block, unit}
+  function parseUnitQuery(q) {
+    q = String(q || '').trim().replace(/室$/, '');
+    let m = q.match(/^([A-Za-z]{2})\s*-?\s*(\S.*)$/); if (m && blockName(m[1].toUpperCase()) !== m[1].toUpperCase()) return { block: blockName(m[1].toUpperCase()), unit: normUnit(m[2]) };
+    const b = S.settings.blocks.find((x) => q.startsWith(x.name) || q.startsWith(x.name.replace(/樓$/, '')));
+    if (b) { const rest = q.slice(q.startsWith(b.name) ? b.name.length : b.name.length - 1).replace(/^[\s樓]+/, '').replace(/^\d+樓\s*/, '').trim(); return { block: b.name, unit: normUnit(rest) }; }
+    return { block: '', unit: normUnit(q) };
+  }
+  function residentBadges(r) { if (!r) return ''; const tags = []; tags.push(r.owner ? '<span class="tag accent">業戶</span>' : r.tenant ? '<span class="tag info">租戶</span>' : '<span class="tag">業租未知</span>'); if (r.elderly) tags.push('<span class="tag warn">65歲以上</span>'); if (r.retired) tags.push('<span class="tag warn">退休</span>'); if (r.alone) tags.push('<span class="tag danger">獨居</span>'); return tags.join(' '); }
+  function residentSnippet(block, unit) {
+    const r = residentFor(block, unit); if (!r) return `<span class="muted small">未有住戶登記資料</span>`;
+    const people = r.people.filter((p) => p.name || p.phone).map((p) => `${esc(p.name)}${p.phone ? ' ' + esc(p.phone) : ''}`).join('、');
+    return `${residentBadges(r)} <span class="small">${people || '—'}</span> <a class="small" href="#/unit/${encodeURIComponent(unitCodeOf(block, unit))}">詳細</a>`;
+  }
+  VIEWS.unit = function (arg) {
+    const code = decodeURIComponent(arg || '');
+    const q = code ? parseUnitQuery(code) : { block: '', unit: '' };
+    const blocks = S.settings.blocks;
+    let html = `<h1>單位查詢</h1><form id="unitForm" class="row" style="grid-template-columns:auto 1fr auto;align-items:end"><div><label>座</label><select name="block">${blocks.map((b) => `<option value="${esc(b.name)}" ${b.name === q.block ? 'selected' : ''}>${esc(b.name)}（${esc(b.code)}）</option>`).join('')}</select></div><div><label>單位（或者直接打 SK707）</label><input name="unit" value="${esc(q.unit)}" placeholder="707" autocomplete="off"></div><button class="btn primary" type="submit">查</button></form>`;
+    if (!S.residents.length) html += `<div class="banner info small">未匯入住戶登記表。去「匯入 Excel」揀住戶登記表（有密碼會問你），六座會一次過匯入。冇住戶資料一樣可以查個案、工程、雜物紀錄。</div>`;
+    if (q.unit && q.block) {
+      const r = residentFor(q.block, q.unit); const fw = deriveFloorWing(q.block, q.unit); const uc = unitCodeOf(q.block, q.unit);
+      html += `<div class="card-head"><div><div class="muted small">${esc(q.block)} · ${esc(fw.floor)} ${esc(fw.wing)}</div><h2 class="mono" style="font-size:1.6rem">${esc(uc)}</h2></div><div class="btn-row"><button class="btn" id="uNewCase">新個案</button><a class="btn" href="#/debris">出雜物信</a><button class="btn" id="uNewWork">新工程</button></div></div>`;
+      html += `<div class="grid cols-2"><div class="card"><div class="card-head"><h3>住戶</h3><div>${residentBadges(r)}</div></div>`;
+      if (r) {
+        html += `<dl class="kv"><dt>身份</dt><dd>${r.owner ? '業戶（已購）' : r.tenant ? '租戶（房委會租住）' : '未登記'}${r.identity ? ' · ' + esc(r.identity) : ''}</dd><dt>關顧</dt><dd>${[r.elderly ? '65歲以上' : '', r.retired ? '退休人士' : '', r.alone ? '獨居人士' : '', r.care].filter(Boolean).join('、') || '—'}</dd></dl>
+          <h4 style="margin-top:12px">住戶及聯絡</h4>${r.people.filter((p) => p.name || p.phone).map((p, i) => `<div class="person"><span>${i + 1}. ${esc(p.name) || '（未有姓名）'}</span><span class="mono">${p.phone ? `<a href="tel:${esc(p.phone.replace(/\s/g, ''))}">${esc(p.phone)}</a>` : '—'}</span></div>`).join('') || '<div class="muted small">未有</div>'}
+          <h4 style="margin-top:12px">緊急聯絡人</h4>${r.emergency.filter((p) => p.name || p.phone).map((p, i) => `<div class="person"><span>${i + 1}. ${esc(p.name) || '（未有姓名）'}</span><span class="mono">${p.phone ? `<a href="tel:${esc(p.phone.replace(/\s/g, ''))}">${esc(p.phone)}</a>` : '—'}</span></div>`).join('') || '<div class="muted small">未有</div>'}
+          ${r.note ? `<p class="small" style="margin-top:10px">備註：${esc(r.note)}</p>` : ''}<p class="tiny muted" style="margin-top:8px">來源：住戶登記表${r.updatedAt ? '（' + fmtDate(r.updatedAt) + ' 匯入）' : ''}。住戶個人資料只可用於管理用途（第486章）。</p>`;
+      } else html += `<div class="empty">住戶登記表冇呢個單位</div>`;
+      html += `</div>`;
+      // 相關紀錄時間線
+      const items = [];
+      S.cases.filter((c) => c.block === q.block && normUnit(c.unit.replace(/[^\d]/g, '') || c.unit) === q.unit || (c.unit && normUnit(c.unit) === q.unit && c.block === q.block)).forEach((c) => items.push({ date: c.openedAt, kind: '個案', title: `${c.ref} ${c.title}`, href: '#/case/' + c.id, tag: STATUS[c.status], cls: c.status === 'closed' ? '' : 'accent' }));
+      S.works.filter((w) => w.unitCode === uc || (w.block === q.block && normUnit(w.unit) === q.unit)).forEach((w) => items.push({ date: w.eventDate || w.tenderOut || w.meetingDate, kind: '工程', title: w.title, href: '#/works/' + w.id, tag: w.status, cls: w.status === '完工' ? 'ok' : 'accent', extra: [w.contractor, w.doneAt ? '完工 ' + fmtDate(w.doneAt) : ''].filter(Boolean).join(' · ') }));
+      S.debris.filter((d) => d.block === q.block && normUnit(d.unit) === q.unit).forEach((d) => items.push({ date: d.date, kind: '雜物', title: d.items, href: '#/debris', tag: d.status, cls: ['已清理', '當垃圾處理'].includes(d.status) ? 'ok' : 'warn', extra: [d.letter1Ref, d.letter2Ref].filter(Boolean).join('、') }));
+      S.letters.filter((l) => (l.recipient || '').replace(/\s/g, '') === uc || (l.recipient || '').includes(uc)).forEach((l) => items.push({ date: (l.createdAt || '').slice(0, 10), kind: '信件', title: `${l.ref} ${l.subject}`, href: '#/register', tag: R.LETTER_KINDS[l.kind] ? R.LETTER_KINDS[l.kind].label : '', cls: '' }));
+      items.sort((a, b) => ((b.date || '') > (a.date || '') ? 1 : -1));
+      html += `<div class="card"><div class="card-head"><h3>相關紀錄（${items.length}）</h3><span class="muted small">個案、工程、雜物、信件，按日期</span></div>${items.length ? `<ul class="timeline">${items.map((it) => `<li><div class="when">${fmtDate(it.date)} · ${esc(it.kind)} <span class="tag ${it.cls}">${esc(it.tag)}</span></div><div class="what"><a href="${it.href}">${esc(it.title)}</a>${it.extra ? `<div class="tiny muted">${esc(it.extra)}</div>` : ''}</div></li>`).join('')}</ul>` : '<div class="empty">未有紀錄</div>'}</div></div>`;
+    } else if (q.unit && !q.block) html += `<div class="banner warn small">請揀座，或者用座代號打，例如 SK707。</div>`;
+    $('#main').innerHTML = html;
+    $('#unitForm').onsubmit = (e) => { e.preventDefault(); const d = formData(e.target); const pq = /^[A-Za-z]{2}/.test(d.unit) ? parseUnitQuery(d.unit) : { block: d.block, unit: normUnit(d.unit) }; if (!pq.unit) return; location.hash = '#/unit/' + encodeURIComponent(unitCodeOf(pq.block, pq.unit)); };
+    const nc = $('#uNewCase'); if (nc) nc.onclick = () => { const r = residentFor(q.block, q.unit); caseForm(null, { block: q.block, unit: q.unit, premises: r && r.tenant && !r.owner ? 'ha_rental' : 'tps', complainant: r && r.people[0] ? r.people[0].name : '', complainantContact: r && r.people[0] ? r.people[0].phone : '', vulnerable: !!(r && (r.elderly || r.alone)) }); };
+    const nw = $('#uNewWork'); if (nw) nw.onclick = () => { const r = residentFor(q.block, q.unit); workForm(null, { block: q.block, unit: q.unit, resident: r ? r.identity : '', phone: r && r.people[0] ? r.people[0].phone : '', care: r ? [r.elderly ? '長者' : '', r.retired ? '退休' : '', r.alone ? '獨居' : ''].filter(Boolean).join('/') : '' }); };
+  };
+  // 由工程表嘅「承辦商」欄自動登記承辦商。簡稱（榮豐）同全名（榮豐工程(亞洲)有限公司）當同一間；見到全名就升級名稱。
+  function contractorUpsert(name) {
+    let n = String(name || '').replace(/(約期中|未過會|已完工|完工|待定)/g, '').replace(/[／/、,，].*$/, '').trim();
+    if (!n || n.length < 2 || /^(承辦商|供應商|未定|無|沒有|n\/a|-|—)$/i.test(n)) return null;
+    const short = (x) => x.replace(/(工程|服務|建造|水務|物業|保養|園藝|裝飾|防水|清潔)?(\(亞洲\)|\(香港\))?(有限公司|公司|工程公司|工程行)$/g, '').trim();
+    const sn = short(n);
+    let k = S.contractors.find((x) => x.name === n || short(x.name) === sn || (sn.length >= 2 && short(x.name).startsWith(sn)) || (short(x.name).length >= 2 && sn.startsWith(short(x.name))));
+    if (!k) { k = { id: uid(), name: n, contact: '', phone: '', contract: '', slaDays: 3, notes: '由工程進度表自動加入', orders: [] }; S.contractors.push(k); k._new = true; }
+    else if (n.length > k.name.length) { S.works.forEach((w) => { if (w.contractor === k.name) w.contractor = n; }); k.name = n; }
+    return k;
+  }
+
   // ---------- 啟動 ----------
   load();
   if (window.PMO_AUTOSEED && !S.cases.length) { let fresh = true; try { fresh = !localStorage.getItem(STORE_KEY); } catch (e) { fresh = false; } if (fresh) seedDemo(); }
   window.addEventListener('hashchange', route);
   $('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
   $('#quickAddBtn').onclick = () => caseForm();
+  $('#unitSearchForm').onsubmit = (e) => { e.preventDefault(); const v = $('#unitSearch').value.trim(); if (!v) return; const pq = parseUnitQuery(v); location.hash = '#/unit/' + encodeURIComponent(pq.block ? unitCodeOf(pq.block, pq.unit) : v); $('#unitSearch').value = ''; };
   $('#modalBackdrop').onclick = (e) => { if (e.target === e.currentTarget) closeModal(); };
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   route();
-  window.PMO = { state: () => S, save, seedDemo, findRoute, importRows, detectKind, toISO, applyPreset, deriveFloorWing, quickDebrisLetter, buildDebrisDocx, PhotoDB };
+  window.PMO = { state: () => S, save, seedDemo, findRoute, importRows, detectKind, toISO, applyPreset, deriveFloorWing, quickDebrisLetter, buildDebrisDocx, PhotoDB, parseUnitQuery, residentFor };
 })();
