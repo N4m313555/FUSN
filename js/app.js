@@ -1209,6 +1209,7 @@
     if (!rowRe.test(xml)) return xml.replace(/<\/sheetData>/, `<row r="${row}"><c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc2}</t></is></c></row></sheetData>`);
     return xml.replace(rowRe, (m, open, body, close) => { const cellsArr = body.match(/<c r="[A-Z]+\d+"[^>]*?(?:\/>|>.*?<\/c>)/gs) || []; const mine = `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc2}</t></is></c>`; let i = cellsArr.findIndex((c) => colIdx(splitRef(c.match(/r="([A-Z]+\d+)"/)[1]).col) > colIdx(col)); if (i < 0) cellsArr.push(mine); else cellsArr.splice(i, 0, mine); return open + cellsArr.join('') + close; });
   }
+  function setRowHeightXml(xml, row, ht) { return xml.replace(new RegExp('<row r="' + row + '"([^>]*)>'), (m, attrs) => `<row r="${row}"${attrs.replace(/ ht="[^"]*"/, '').replace(/ customHeight="[^"]*"/, '')} ht="${ht}" customHeight="1">`); }
   function selectDebrisForSheet({ scope, from, to }) {
     return S.debris.filter((d) => {
       const cleared = ['已清理', '當垃圾處理'].includes(d.status); const lettered = !!d.letter1At;
@@ -1229,8 +1230,11 @@
     const colFor = (block, wing) => { if (!blockStarts.length) return (wingCols.find((w) => w.wing === wing) || {}).col; const i = blockStarts.findIndex((b) => b.name === block); if (i < 0) return null; const start = blockStarts[i].col, end = blockStarts[i + 1] ? blockStarts[i + 1].col : 999; return (wingCols.find((w) => w.wing === wing && colIdx(w.col) >= start && colIdx(w.col) < end) || {}).col; };
     const adds = {}; const remarks = {};
     entries.forEach((d) => { if (blockStarts.length === 0 && d.block !== sheetName) return; const fl = parseInt(d.floor) || parseInt((deriveFloorWing(d.block, d.unit).floor || '')); const wing = d.wing || deriveFloorWing(d.block, d.unit).wing; const row = floorRow[fl]; const col = colFor(d.block, wing); if (!row || !col) return; const mark = ['已清理', '當垃圾處理'].includes(d.status) ? '✓' : d.letter2At ? '②' : ''; (adds[col + row] = adds[col + row] || []).push(String(d.unit) + mark); if (remarkCol) (remarks[remarkCol + row] = remarks[remarkCol + row] || []).push(`${debrisCode(d)} ${d.items}${d.letter1Ref ? '｜' + fmtDate(d.letter1At) + ' ' + d.letter1Ref.replace(/^.*\//, '') : ''}${d.letter2Ref ? '｜第二次 ' + fmtDate(d.letter2At) + ' ' + d.letter2Ref.replace(/^.*\//, '') : ''}${d.clearedAt ? '｜' + d.status + ' ' + fmtDate(d.clearedAt) : ''}`); });
-    Object.entries(adds).forEach(([ref, list]) => { xml = setCellXml(xml, ref, list.join('、')); });
-    Object.entries(remarks).forEach(([ref, list]) => { xml = setCellXml(xml, ref, list.join('；')); });
+    const lines = {};
+    const unitNum = (t) => parseInt(t, 10) || 0;
+    Object.entries(adds).forEach(([ref, list]) => { list.sort((a, b) => unitNum(a) - unitNum(b)); xml = setCellXml(xml, ref, list.join('\n')); const r = splitRef(ref).row; lines[r] = Math.max(lines[r] || 0, list.length); });
+    Object.entries(remarks).forEach(([ref, list]) => { list.sort((a, b) => unitNum(a.replace(/^[A-Z]+/, '')) - unitNum(b.replace(/^[A-Z]+/, ''))); xml = setCellXml(xml, ref, list.join('\n')); const r = splitRef(ref).row; lines[r] = Math.max(lines[r] || 0, list.reduce((a, t) => a + Math.ceil(t.length / 34), 0)); });
+    Object.entries(lines).forEach(([r, n]) => { if (n > 1) xml = setRowHeightXml(xml, Number(r), Math.min(409, 6 + n * 16)); });
     // 標題、日期、巡查員、圖例
     Object.entries(cells).forEach(([ref, c]) => { if (c.text.includes('樓層巡查剔格表') && title) xml = setCellXml(xml, ref, c.text.replace('樓層巡查剔格表', title)); if (/^位置：/.test(c.text)) xml = setCellXml(xml, ref, c.text + '　（格內為單位號碼；②＝已出第二次信，✓＝已清理）'); });
     rowsSorted.forEach((r) => { const refs = byRow[r].sort((a, b) => colIdx(splitRef(a).col) - colIdx(splitRef(b).col)); refs.forEach((ref, i) => { const t = cells[ref].text; if (/^巡查日期/.test(t) || /^巡查員/.test(t)) { const target = refs.slice(i + 1).find((x) => /^＿+$/.test(cells[x].text)); if (target) xml = setCellXml(xml, target, /日期/.test(t) ? cnDate(date) : (inspector || '')); } }); });
