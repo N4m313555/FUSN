@@ -783,7 +783,7 @@
     if (f.q) { const q = f.q.toLowerCase(); list = list.filter((d) => [debrisCode(d), d.floor, d.items, d.note, d.letter1Ref].join(' ').toLowerCase().includes(q)); }
     list.sort((a, b) => (b.escape - a.escape) || (a.block < b.block ? -1 : a.block > b.block ? 1 : 0) || (parseInt(a.floor) || 0) - (parseInt(b.floor) || 0));
     const canDocx = typeof window.JSZip !== 'undefined' && !!window.DEBRIS_TEMPLATE_B64;
-    $('#main').innerHTML = `<div class="card-head"><h1>樓層雜物表（${list.length}）</h1><div class="btn-row"><a class="btn" href="#/rounds">樓層巡查</a><a class="btn" href="#/debris/table">列印雜物表</a><button class="btn" id="exportDebris">匯出 CSV</button><button class="btn" id="addDebris">新增（唔出信）</button></div></div>
+    $('#main').innerHTML = `<div class="card-head"><h1>樓層雜物表（${list.length}）</h1><div class="btn-row"><a class="btn" href="#/rounds">樓層巡查</a><a class="btn" href="#/debris/table">列印雜物表</a><button class="btn" id="tickXlsx">下載雜物表 Excel</button><button class="btn" id="exportDebris">匯出 CSV</button><button class="btn" id="addDebris">新增（唔出信）</button></div></div>
       <div class="card" id="quickCard"><div class="card-head"><h3>快速出雜物信</h3><span class="muted small">畀座、單位、相片——樓層、翼、日期、編號自動填，出一封跟公司原信格式嘅 Word</span></div>
         <form id="quickForm"><div class="row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"><div><label>座</label><select name="block" id="qBlock">${S.settings.blocks.map((b) => `<option value="${esc(b.name)}">${esc(b.name)}（${esc(b.code)}）</option>`).join('')}${S.settings.blocks.length ? '' : '<option value="">先去設定填座</option>'}</select></div><div><label>單位（例 707、2118）</label><input name="unit" id="qUnit" required placeholder="707" inputmode="numeric" autocomplete="off"></div><div><label>物品（信入面寫「擺放……」）</label><input name="items" id="qItems" value="雜物" placeholder="紙箱三個、摺凳一張"></div><div><label>位置</label><input name="location" id="qLocation" value="樓層走廊" list="locList"><datalist id="locList"><option value="樓層走廊"><option value="後樓梯"><option value="大堂"><option value="電梯大堂"></datalist></div><div><label>跟進同事</label><select name="officer">${officerOptions(S.settings.officerName)}</select></div></div>
         <div class="row"><div><label>相片（可以多張，手機可直接影）</label><input type="file" name="photos" id="qPhotos" accept="image/*" multiple capture="environment"></div><div><label class="check" style="margin-top:22px"><input type="checkbox" name="escape" checked> 阻礙走火通道（即時處理）</label></div></div>
@@ -813,6 +813,7 @@
     $$('[data-sel]').forEach((cb) => cb.onchange = () => { const id = cb.dataset.sel; if (cb.checked) { if (!debrisBatch.includes(id)) debrisBatch.push(id); } else debrisBatch = debrisBatch.filter((x) => x !== id); updateBatchBtn(); });
     $('#batchLetters').onclick = () => { if (!debrisBatch.length) return; confirmDialog(`為 ${debrisBatch.length} 個單位生成雜物信並編號（${nextLetterRef()} 起）？`, () => { batchLetterIds = []; debrisBatch.forEach((id) => { const d = S.debris.find((x) => x.id === id); if (!d) return; batchLetterIds.push(issueDebrisLetter(d)); }); save(); location.hash = '#/debris/print'; }); };
     $('#addDebris').onclick = () => debrisForm();
+    $('#tickXlsx').onclick = debrisSheetDialog;
     $('#exportDebris').onclick = () => { const rows = [['編號', '發現日期', '樓', '樓層', '翼', '單位', '單位代號', '物品', '是否阻礙走火通道', '相片', '第一次通知日期', '第一次通知信件編號', '第二次通知日期', '第二次通知信件編號', '清理／處置日期', '狀態', '跟進同事', '關顧提示', '相關投訴編號', '備註']]; S.debris.forEach((d, i) => rows.push([i + 1, d.date, d.block, d.floor, d.wing, d.unit, debrisCode(d), d.items, d.escape ? '是' : '否', d.photo || (d.photoCount ? d.photoCount + ' 張' : ''), d.letter1At, d.letter1Ref, d.letter2At, d.letter2Ref, d.clearedAt, d.status, d.officer, d.care, d.caseRef, d.note])); download(`debris-${today()}.csv`, '﻿' + rows.map((r) => r.map((v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\n'), 'text/csv'); };
     $('#dq').oninput = (e) => { debrisFilter.q = e.target.value; VIEWS.debris(); const el = $('#dq'); el.focus(); el.setSelectionRange(99, 99); };
     $('#db').onchange = (e) => { debrisFilter.block = e.target.value; VIEWS.debris(); };
@@ -1190,6 +1191,70 @@
     return k;
   }
 
+
+  // ---------- 樓層雜物表 Excel（用公司「樓層巡查剔格表」做範本） ----------
+  const colIdx = (letters) => letters.split('').reduce((a, ch) => a * 26 + (ch.charCodeAt(0) - 64), 0);
+  const colLetters = (n) => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+  const splitRef = (ref) => { const m = ref.match(/^([A-Z]+)(\d+)$/); return { col: m[1], row: Number(m[2]) }; };
+  const xmlUnesc = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+  // 讀一張工作表嘅所有格：{ref:{s, text}}
+  function sheetCells(xml) {
+    const cells = {}; xml.replace(/<c r="([A-Z]+\d+)"([^>]*?)(?:\/>|>(.*?)<\/c>)/gs, (_, ref, attrs, inner) => { const s = (attrs.match(/ s="(\d+)"/) || [])[1] || ''; const t = inner ? (inner.match(/<t[^>]*>([^<]*)<\/t>/) || [])[1] : ''; cells[ref] = { s, text: t ? xmlUnesc(t) : '' }; return _; }); return cells;
+  }
+  // 設定一格（保留樣式）；格唔存在就喺該行按次序插入
+  function setCellXml(xml, ref, text) {
+    const esc2 = xmlEsc(text); const re = new RegExp('<c r="' + ref + '"([^>]*?)(?:/>|>.*?</c>)', 's');
+    if (re.test(xml)) return xml.replace(re, (m, attrs) => { const s = (attrs.match(/ s="\d+"/) || [''])[0]; return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${esc2}</t></is></c>`; });
+    const { col, row } = splitRef(ref); const rowRe = new RegExp('(<row r="' + row + '"[^>]*>)(.*?)(</row>)', 's');
+    if (!rowRe.test(xml)) return xml.replace(/<\/sheetData>/, `<row r="${row}"><c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc2}</t></is></c></row></sheetData>`);
+    return xml.replace(rowRe, (m, open, body, close) => { const cellsArr = body.match(/<c r="[A-Z]+\d+"[^>]*?(?:\/>|>.*?<\/c>)/gs) || []; const mine = `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc2}</t></is></c>`; let i = cellsArr.findIndex((c) => colIdx(splitRef(c.match(/r="([A-Z]+\d+)"/)[1]).col) > colIdx(col)); if (i < 0) cellsArr.push(mine); else cellsArr.splice(i, 0, mine); return open + cellsArr.join('') + close; });
+  }
+  function selectDebrisForSheet({ scope, from, to }) {
+    return S.debris.filter((d) => {
+      const cleared = ['已清理', '當垃圾處理'].includes(d.status); const lettered = !!d.letter1At;
+      if (scope === 'open_lettered' && (cleared || !lettered)) return false;
+      if (scope === 'open' && cleared) return false;
+      if (scope === 'lettered' && !lettered) return false;
+      const ref = d.letter1At || d.date; if (from && ref < from) return false; if (to && ref > to) return false; return true;
+    });
+  }
+  function fillTickSheet(xml, sheetName, entries, { date, inspector, title }) {
+    const cells = sheetCells(xml); const byRow = {}; Object.keys(cells).forEach((ref) => { const { row } = splitRef(ref); (byRow[row] = byRow[row] || []).push(ref); });
+    const rowsSorted = Object.keys(byRow).map(Number).sort((a, b) => a - b);
+    const floorRow = {}; let wingRow = null, blockRow = null, remarkCol = null;
+    rowsSorted.forEach((r) => { byRow[r].forEach((ref) => { const t = cells[ref].text; const { col } = splitRef(ref); let m; if (col === 'A' && (m = t.match(/^(\d+)\s*樓/))) floorRow[Number(m[1])] = r; if (/^[A-C]翼$/.test(t)) wingRow = wingRow || r; if (S.settings.blocks.some((b) => b.name === t) && col !== 'A') blockRow = blockRow || r; if (t === '備註') remarkCol = col; }); });
+    if (!wingRow) return xml;
+    const wingCols = byRow[wingRow].filter((ref) => /^[A-C]翼$/.test(cells[ref].text)).map((ref) => ({ col: splitRef(ref).col, wing: cells[ref].text })).sort((a, b) => colIdx(a.col) - colIdx(b.col));
+    const blockStarts = blockRow ? byRow[blockRow].filter((ref) => S.settings.blocks.some((b) => b.name === cells[ref].text)).map((ref) => ({ col: colIdx(splitRef(ref).col), name: cells[ref].text })).sort((a, b) => a.col - b.col) : [];
+    const colFor = (block, wing) => { if (!blockStarts.length) return (wingCols.find((w) => w.wing === wing) || {}).col; const i = blockStarts.findIndex((b) => b.name === block); if (i < 0) return null; const start = blockStarts[i].col, end = blockStarts[i + 1] ? blockStarts[i + 1].col : 999; return (wingCols.find((w) => w.wing === wing && colIdx(w.col) >= start && colIdx(w.col) < end) || {}).col; };
+    const adds = {}; const remarks = {};
+    entries.forEach((d) => { if (blockStarts.length === 0 && d.block !== sheetName) return; const fl = parseInt(d.floor) || parseInt((deriveFloorWing(d.block, d.unit).floor || '')); const wing = d.wing || deriveFloorWing(d.block, d.unit).wing; const row = floorRow[fl]; const col = colFor(d.block, wing); if (!row || !col) return; const mark = ['已清理', '當垃圾處理'].includes(d.status) ? '✓' : d.letter2At ? '②' : ''; (adds[col + row] = adds[col + row] || []).push(String(d.unit) + mark); if (remarkCol) (remarks[remarkCol + row] = remarks[remarkCol + row] || []).push(`${debrisCode(d)} ${d.items}${d.letter1Ref ? '｜' + fmtDate(d.letter1At) + ' ' + d.letter1Ref.replace(/^.*\//, '') : ''}${d.letter2Ref ? '｜第二次 ' + fmtDate(d.letter2At) + ' ' + d.letter2Ref.replace(/^.*\//, '') : ''}${d.clearedAt ? '｜' + d.status + ' ' + fmtDate(d.clearedAt) : ''}`); });
+    Object.entries(adds).forEach(([ref, list]) => { xml = setCellXml(xml, ref, list.join('、')); });
+    Object.entries(remarks).forEach(([ref, list]) => { xml = setCellXml(xml, ref, list.join('；')); });
+    // 標題、日期、巡查員、圖例
+    Object.entries(cells).forEach(([ref, c]) => { if (c.text.includes('樓層巡查剔格表') && title) xml = setCellXml(xml, ref, c.text.replace('樓層巡查剔格表', title)); if (/^位置：/.test(c.text)) xml = setCellXml(xml, ref, c.text + '　（格內為單位號碼；②＝已出第二次信，✓＝已清理）'); });
+    rowsSorted.forEach((r) => { const refs = byRow[r].sort((a, b) => colIdx(splitRef(a).col) - colIdx(splitRef(b).col)); refs.forEach((ref, i) => { const t = cells[ref].text; if (/^巡查日期/.test(t) || /^巡查員/.test(t)) { const target = refs.slice(i + 1).find((x) => /^＿+$/.test(cells[x].text)); if (target) xml = setCellXml(xml, target, /日期/.test(t) ? cnDate(date) : (inspector || '')); } }); });
+    return xml;
+  }
+  async function buildDebrisTickXlsx(opts) {
+    if (typeof window.JSZip === 'undefined' || !window.TICK_TEMPLATE_B64) throw new Error('未載入 Excel 範本');
+    const zip = await window.JSZip.loadAsync(window.TICK_TEMPLATE_B64, { base64: true });
+    const wbx = await zip.file('xl/workbook.xml').async('string'); const rels = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+    const relMap = {}; rels.replace(/<Relationship\b[^>]*>/g, (tag) => { const id = (tag.match(/\bId="([^"]+)"/) || [])[1]; const tg = (tag.match(/\bTarget="([^"]+)"/) || [])[1]; if (id && tg) relMap[id] = tg.replace(/^\/xl\//, '').replace(/^\//, '').replace(/^xl\//, ''); return tag; });
+    const sheets = []; wbx.replace(/<sheet\b[^>]*>/g, (tag) => { const name = xmlUnesc((tag.match(/\bname="([^"]+)"/) || [])[1] || ''); const rid = (tag.match(/\br:id="([^"]+)"/) || [])[1]; if (rid && relMap[rid]) sheets.push({ name, path: 'xl/' + relMap[rid] }); return tag; });
+    const entries = selectDebrisForSheet(opts);
+    for (const sh of sheets) { const f = zip.file(sh.path); if (!f) continue; const xml = await f.async('string'); zip.file(sh.path, fillTickSheet(xml, sh.name, entries, opts)); }
+    return { blob: await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), count: entries.length, sheets: sheets.length };
+  }
+  function debrisSheetDialog() {
+    openModal(`<h2>下載樓層雜物表（Excel）</h2><p class="small">用公司「樓層巡查剔格表」範本：總表按座／翼／樓層填入單位號碼，每座一張分表另有備註（物品、信件編號、日期）。</p>
+      <form id="tickForm"><div class="row"><div><label>範圍</label><select name="scope"><option value="open_lettered">已出信而未清理（預設）</option><option value="open">全部未清理</option><option value="lettered">全部已出信（包括已清理）</option><option value="all">全部紀錄</option></select></div><div><label>由（出信／發現日期）</label><input type="date" name="from"></div><div><label>至</label><input type="date" name="to"></div></div>
+      <div class="row"><div><label>表上日期</label><input type="date" name="date" value="${today()}"></div><div><label>巡查員／製表</label><select name="inspector">${officerOptions(S.settings.officerName)}</select></div><div><label>標題</label><input name="title" value="樓層雜物表"></div></div>
+      <div class="btn-row"><button class="btn primary" type="submit">生成並下載</button><button class="btn" type="button" id="mCancel">取消</button></div></form>`);
+    $('#mCancel').onclick = closeModal;
+    $('#tickForm').onsubmit = async (e) => { e.preventDefault(); const v = formData(e.target); closeModal(); try { const r = await buildDebrisTickXlsx(v); toast(`已填入 ${r.count} 項`); downloadBlob(`debris-sheet_${v.date || today()}.xlsx`, r.blob); } catch (err) { toast('生成失敗：' + err.message); } };
+  }
+
   // ---------- 啟動 ----------
   load();
   if (window.PMO_AUTOSEED && !S.cases.length) { let fresh = true; try { fresh = !localStorage.getItem(STORE_KEY); } catch (e) { fresh = false; } if (fresh) seedDemo(); }
@@ -1200,5 +1265,5 @@
   $('#modalBackdrop').onclick = (e) => { if (e.target === e.currentTarget) closeModal(); };
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   route();
-  window.PMO = { state: () => S, save, seedDemo, findRoute, importRows, detectKind, toISO, applyPreset, deriveFloorWing, quickDebrisLetter, buildDebrisDocx, PhotoDB, parseUnitQuery, residentFor };
+  window.PMO = { state: () => S, save, seedDemo, findRoute, importRows, detectKind, toISO, applyPreset, deriveFloorWing, quickDebrisLetter, buildDebrisDocx, PhotoDB, parseUnitQuery, residentFor, buildDebrisTickXlsx };
 })();

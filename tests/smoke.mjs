@@ -277,6 +277,32 @@ check((await page.evaluate(async (id) => (await window.PMO.PhotoDB.get(id)).leng
 await page.selectOption('#qBlock', '善群樓'); await page.fill('#qUnit', '2905'); await page.waitForTimeout(50);
 check((await page.locator('#qDerived').innerText()).includes('第二次通知'), 'same unit again is a second notice');
 
+// 樓層雜物表 Excel（用公司剔格表範本填入）
+await go('#/debris');
+await page.click('#tickXlsx'); await page.waitForTimeout(80);
+await page.selectOption('#tickForm [name=scope]', 'all');
+const [tickDl] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.click('#tickForm button[type=submit]')]);
+const tickPath = path.join(root, 'tests', 'out-tick.xlsx'); await tickDl.saveAs(tickPath);
+check(/^debris-sheet_\d{4}-\d{2}-\d{2}\.xlsx$/.test(tickDl.suggestedFilename()), 'tick sheet filename: ' + tickDl.suggestedFilename());
+{
+  const wb2 = XLSX.read(fs.readFileSync(tickPath), { type: 'buffer' });
+  check(wb2.SheetNames.join(',') === '總表,善雅樓,善翠樓,善美樓,善景樓,善群樓,善鄰樓', 'template sheets preserved');
+  const master = XLSX.utils.sheet_to_json(wb2.Sheets['總表'], { header: 1, raw: true, defval: '' });
+  const blk = XLSX.utils.sheet_to_json(wb2.Sheets['善群樓'], { header: 1, raw: true, defval: '' });
+  // SK912 = 9樓 B翼 → 總表 第 9 樓行、善群樓 B翼 欄；SK707 = 7樓 B翼
+  const row9 = master.find((r) => /^9\s*樓/.test(String(r[0]))); const hdrBlocks = master[4]; const hdrWings = master[5];
+  const skCol = hdrBlocks.indexOf('善群樓'); const bCol = hdrWings.findIndex((v, i) => i >= skCol && v === 'B翼');
+  check(row9 && String(row9[bCol]).includes('912'), '總表 marks SK912 under 善群樓 B翼 on 9樓: ' + (row9 && row9[bCol]));
+  const row7 = master.find((r) => /^7\s*樓/.test(String(r[0])));
+  check(row7 && String(row7[bCol]).includes('707'), '總表 marks SK707 on 7樓');
+  check(String(master[0][0]).includes('樓層雜物表') && master.some((r) => r.some((v) => /2026年|年/.test(String(v)))), 'title replaced and date filled');
+  const b9 = blk.find((r) => /^9\s*樓/.test(String(r[0])));
+  check(b9 && String(b9[2]).includes('912') && String(b9[4]).includes('鞋櫃一個') && /L\d{4}/.test(String(b9[4])), '善群樓 sheet has unit in B翼 and remark with items and letter ref: ' + (b9 && b9[4]));
+  const sn = XLSX.utils.sheet_to_json(wb2.Sheets['善雅樓'], { header: 1, raw: true, defval: '' });
+  check(!sn.slice(5).some((r) => r.slice(1, 4).some((v) => v !== '')), 'other block sheet untouched');
+}
+fs.unlinkSync(tickPath);
+
 // 樓層巡查剔格表
 await go('#/rounds');
 check((await text()).includes('樓層巡查剔格表'), 'rounds view');

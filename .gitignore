@@ -3,3 +3,4 @@ tests/shot-*.png
 .DS_Store
 tests/fixture.xlsx
 tests/out.docx
+tests/out-tick.xlsx
