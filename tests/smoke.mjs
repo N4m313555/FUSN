@@ -374,12 +374,23 @@ await page.screenshot({ path: path.join(root, 'tests', 'shot-today.png'), fullPa
 await go('#/works'); await page.screenshot({ path: path.join(root, 'tests', 'shot-works.png') });
 await go('#/debris'); await page.screenshot({ path: path.join(root, 'tests', 'shot-debris.png') });
 
-// 手機闊度
+// 使用指南頁
+await go('#/guide');
+t = await text();
+check(t.includes('目錄') && t.includes('點樣打開') && t.includes('樓層雜物'), 'guide page renders with table of contents');
+check(await page.locator('.guide-body img').count() >= 3, 'guide page shows screenshots');
+check(await page.locator('.guide-body ol li').count() >= 10, 'guide page has numbered steps');
+
+// 手機闊度：每頁都唔可以橫向捲動
 await page.setViewportSize({ width: 390, height: 800 });
 await go('#/today');
 await page.waitForTimeout(400); // 等側欄滑走嘅過渡動畫
-const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
-check(!overflow, 'no horizontal overflow at phone width');
+for (const h of ['#/today', '#/cases', '#/unit/SK707', '#/debris', '#/rounds', '#/works', '#/import', '#/settings', '#/letters', '#/guide', '#/case/' + seep.id]) {
+  await go(h); await page.waitForTimeout(120);
+  const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  check(ov <= 1, 'no horizontal overflow at phone width on ' + h + ' (' + ov + 'px)');
+}
+await go('#/today'); await page.waitForTimeout(200);
 await page.screenshot({ path: path.join(root, 'tests', 'shot-mobile.png') });
 await page.click('#menuBtn'); await page.waitForTimeout(300);
 check(await page.locator('#sidebar').evaluate((el) => el.classList.contains('open') && el.getBoundingClientRect().left === 0), 'mobile menu opens');

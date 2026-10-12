@@ -189,7 +189,8 @@ mark { background: var(--warn-soft); color: var(--text); padding: 0 2px; border-
 .cell.ok { background: var(--ok-soft); color: var(--ok); border-color: var(--ok); }
 .cell.debris { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
 .photo-strip img { page-break-inside: avoid; }
-.guide-body { font-size: 1.05rem; line-height: 1.8; max-width: 760px; }
+.guide-body { font-size: 1.05rem; line-height: 1.8; max-width: 760px; overflow-wrap: anywhere; word-break: break-word; }
+.guide-body p, .guide-body li, .guide-body a { overflow-wrap: anywhere; }
 .guide-body h2 { margin-top: 28px; padding-top: 12px; border-top: 2px solid var(--accent-soft); font-size: 1.35rem; }
 .guide-body h3 { margin-top: 18px; font-size: 1.1rem; }
 .guide-body ol, .guide-body ul { padding-left: 1.4em; } .guide-body li { margin-bottom: 6px; }
