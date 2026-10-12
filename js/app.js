@@ -100,7 +100,7 @@
   }
 
   // ---------- 路由 ----------
-  const TITLES = { today: '今日', cases: '個案', inspections: '巡查紀錄', contractors: '承辦商', works: '工程項目', debris: '樓層雜物', rounds: '樓層巡查', unit: '單位查詢', router: '法規導航', letters: '信件草擬', register: '信件紀錄', prep: '對話準備', review: '形勢判斷', settings: '設定／備份', import: '匯入 Excel' };
+  const TITLES = { today: '今日', cases: '個案', inspections: '巡查紀錄', contractors: '承辦商', works: '工程項目', debris: '樓層雜物', rounds: '樓層巡查', unit: '單位查詢', guide: '使用指南', router: '法規導航', letters: '信件草擬', register: '信件紀錄', prep: '對話準備', review: '形勢判斷', settings: '設定／備份', import: '匯入 Excel' };
   function route() {
     const hash = location.hash.replace(/^#\/?/, '') || 'today';
     const [name, arg] = hash.split('/');
@@ -1258,6 +1258,32 @@
     $('#mCancel').onclick = closeModal;
     $('#tickForm').onsubmit = async (e) => { e.preventDefault(); const v = formData(e.target); closeModal(); try { const r = await buildDebrisTickXlsx(v); toast(`已填入 ${r.count} 項`); downloadBlob(`debris-sheet_${v.date || today()}.xlsx`, r.blob); } catch (err) { toast('生成失敗：' + err.message); } };
   }
+
+
+  // ---------- 使用指南（內容喺 js/guide.js，截圖喺 js/guide-images.js） ----------
+  function mdToHtml(md) {
+    const lines = String(md || '').split('\n'); const out = []; let list = null;
+    const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/`([^`]+)`/g, '<code>$1</code>');
+    const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+    lines.forEach((raw) => {
+      const l = raw.replace(/\s+$/, '');
+      let m;
+      if ((m = l.match(/^\[\[img:([a-z0-9-]+)\]\]$/i))) { closeList(); const src = (window.GUIDE_IMAGES || {})[m[1]]; if (src) out.push(`<figure class="guide-fig"><img src="${src}" alt="${esc(m[1])}" loading="lazy"></figure>`); return; }
+      if ((m = l.match(/^(#{1,4})\s+(.*)$/))) { closeList(); const lv = Math.min(4, m[1].length + 1); out.push(`<h${lv} id="g-${esc(m[2]).replace(/[^\w一-鿿]+/g, '-')}">${inline(m[2])}</h${lv}>`); return; }
+      if ((m = l.match(/^\s*(\d+)[.、)]\s+(.*)$/))) { if (list !== 'ol') { closeList(); out.push('<ol>'); list = 'ol'; } out.push(`<li>${inline(m[2])}</li>`); return; }
+      if ((m = l.match(/^\s*[-*•]\s+(.*)$/))) { if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); return; }
+      if (!l.trim()) { closeList(); return; }
+      closeList(); out.push(`<p>${inline(l)}</p>`);
+    });
+    closeList(); return out.join('\n');
+  }
+  VIEWS.guide = function (arg) {
+    const md = window.GUIDE_MD || '# 使用指南\n\n指南內容未載入。';
+    const toc = [...md.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
+    $('#main').innerHTML = `<div class="guide"><div class="card no-print"><div class="card-head"><h3>目錄</h3><button class="btn small" id="guidePrint">列印指南</button></div><ol class="guide-toc">${toc.map((t) => `<li><a href="#g-${esc(t).replace(/[^\w一-鿿]+/g, '-')}">${esc(t)}</a></li>`).join('')}</ol></div><div class="card guide-body">${mdToHtml(md)}</div></div>`;
+    $('#guidePrint').onclick = () => window.print();
+    $$('.guide-toc a').forEach((a) => a.onclick = (e) => { e.preventDefault(); const el = document.getElementById(a.getAttribute('href').slice(1)); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  };
 
   // ---------- 啟動 ----------
   load();

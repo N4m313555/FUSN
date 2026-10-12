@@ -21,6 +21,8 @@ const jszip = read('vendor/jszip.min.js');
 const odec = read('js/office-decrypt.js');
 const tpl = read('js/debris-template.js');
 const tick = read('js/tick-template.js');
+const guideImgs = read('js/guide-images.js');
+const guide = read('js/guide.js');
 
 const title = html.match(/<title>([^<]*)<\/title>/)[1];
 const description = html.match(/<meta name="description" content="([^"]*)">/)[1];
@@ -32,9 +34,11 @@ const body = html.slice(html.indexOf('<body>') + 6, html.lastIndexOf('</body>'))
   .replace(/<script src="js\/office-decrypt\.js"><\/script>\s*/, '')
   .replace(/<script src="js\/debris-template\.js"><\/script>\s*/, '')
   .replace(/<script src="js\/tick-template\.js"><\/script>\s*/, '')
+  .replace(/<script src="js\/guide-images\.js"><\/script>\s*/, '')
+  .replace(/<script src="js\/guide\.js"><\/script>\s*/, '')
   .replace(/<script src="js\/data\.js"><\/script>\s*/, '')
   .replace(/<script src="js\/app\.js"><\/script>\s*/, '');
-const scripts = `<script>\n${xlsx}\n</script>\n<script>\n${jszip}\n</script>\n<script>\n${odec}\n</script>\n<script>\n${tpl}\n</script>\n<script>\n${tick}\n</script>\n<script>\n${data}\n</script>\n<script>\n${app}\n</script>`;
+const scripts = `<script>\n${xlsx}\n</script>\n<script>\n${jszip}\n</script>\n<script>\n${odec}\n</script>\n<script>\n${tpl}\n</script>\n<script>\n${tick}\n</script>\n<script>\n${guideImgs}\n</script>\n<script>\n${guide}\n</script>\n<script>\n${data}\n</script>\n<script>\n${app}\n</script>`;
 // --autoseed 只影響 artifact 版本：第一次打開自動載入示範資料，等人一睇就知個系統點運作
 const seed = autoseed ? '<script>window.PMO_AUTOSEED = true;</script>\n' : '';
 
