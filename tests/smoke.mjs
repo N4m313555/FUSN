@@ -397,6 +397,33 @@ check(await page.locator('#sidebar').evaluate((el) => el.classList.contains('ope
 await page.screenshot({ path: path.join(root, 'tests', 'shot-mobile-menu.png') });
 await page.click('#sidebar a[data-route=cases]'); await page.waitForTimeout(100);
 check(!(await page.locator('#sidebar').evaluate((el) => el.classList.contains('open'))), 'mobile menu closes after navigation');
+// 選單長過畫面：側欄要自己捲到最底，而且唔可以拖住後面個頁一齊捲（矮手機、手機打橫、矮手提電腦）
+for (const vp of [{ width: 390, height: 560 }, { width: 844, height: 390 }, { width: 1280, height: 600 }]) {
+  await page.setViewportSize(vp);
+  await go('#/guide'); await page.waitForTimeout(400); // 指南頁夠長，後面個頁有得捲先試得出
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const phone = await page.locator('#menuBtn').isVisible();
+  if (phone) { await page.click('#menuBtn'); await page.waitForTimeout(300); }
+  const box = await page.locator('#sidebar').boundingBox();
+  await page.mouse.move(box.x + 100, Math.min(box.y + box.height, vp.height) - 60);
+  for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, 400); await page.waitForTimeout(80); }
+  await page.waitForTimeout(300);
+  const st = await page.evaluate(() => {
+    const last = document.querySelector('#nav a[data-route=settings]').getBoundingClientRect();
+    const foot = document.querySelector('.sidebar-foot').getBoundingClientRect();
+    return { lastBottom: Math.round(last.bottom), footBottom: Math.round(foot.bottom), vh: innerHeight, pageY: Math.round(scrollY) };
+  });
+  const tag = `${vp.width}x${vp.height}`;
+  const reach = st.lastBottom <= st.vh && st.footBottom <= st.vh + 1;
+  check(reach, `menu scrolls down to its last item at ${tag} (last ${st.lastBottom}, foot ${st.footBottom}, screen ${st.vh})`);
+  check(st.pageY === 0, `scrolling the menu does not scroll the page behind it at ${tag} (page moved ${st.pageY}px)`);
+  if (reach) {
+    await page.click('#nav a[data-route=settings]', { timeout: 3000 }); await page.waitForTimeout(150);
+    check((await page.evaluate(() => location.hash)) === '#/settings', `last menu item can be clicked at ${tag}`);
+    if (phone) check(!(await page.locator('#sidebar').evaluate((el) => el.classList.contains('open'))), `menu closes after picking the last item at ${tag}`);
+  }
+  await page.locator('#sidebar').evaluate((el) => { el.classList.remove('open'); el.scrollTop = 0; });
+}
 await page.setViewportSize({ width: 1280, height: 900 });
 await go('#/case/' + seep.id);
 await page.screenshot({ path: path.join(root, 'tests', 'shot-case.png'), fullPage: true });
